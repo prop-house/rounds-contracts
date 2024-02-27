@@ -37,7 +37,7 @@ $ anvil
 #### Deploy (Goerli)
 
 ```shell
-forge script script/Deploy.s.sol --chain 5 --rpc-url <your_rpc_url> --broadcast
+forge script script/Deploy.s.sol --chain 84532 --rpc-url https://sepolia.base.org --broadcast
 ```
 
 ### Cast
