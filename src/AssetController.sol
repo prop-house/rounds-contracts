@@ -1,17 +1,17 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.8.17;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.23;
 
-import {IERC20} from 'openzeppelin-contracts/token/ERC20/IERC20.sol';
-import {IERC721} from 'openzeppelin-contracts/token/ERC721/IERC721.sol';
-import {IERC1155} from 'openzeppelin-contracts/token/ERC1155/IERC1155.sol';
-import {SafeERC20} from 'openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol';
+import {ERC20} from 'solady/tokens/ERC20.sol';
+import {ERC721} from 'solady/tokens/ERC721.sol';
+import {ERC1155} from 'solady/tokens/ERC1155.sol';
+import {SafeTransferLib} from 'solady/utils/SafeTransferLib.sol';
 
 abstract contract AssetController {
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for address;
 
     /// @notice Supported asset types
     enum AssetType {
-        Native,
+        ETH,
         ERC20,
         ERC721,
         ERC1155
@@ -44,17 +44,17 @@ abstract contract AssetController {
     /// @param asset The asset to fetch the balance of
     /// @param account The account to fetch the balance for
     function _balanceOf(Asset memory asset, address account) internal view returns (uint256) {
-        if (asset.assetType == AssetType.Native) {
+        if (asset.assetType == AssetType.ETH) {
             return account.balance;
         }
         if (asset.assetType == AssetType.ERC20) {
-            return IERC20(asset.token).balanceOf(account);
+            return ERC20(asset.token).balanceOf(account);
         }
         if (asset.assetType == AssetType.ERC721) {
-            return IERC721(asset.token).ownerOf(asset.identifier) == account ? 1 : 0;
+            return ERC721(asset.token).ownerOf(asset.identifier) == account ? 1 : 0;
         }
         if (asset.assetType == AssetType.ERC1155) {
-            return IERC1155(asset.token).balanceOf(account, asset.identifier);
+            return ERC1155(asset.token).balanceOf(account, asset.identifier);
         }
         revert INVALID_ASSET_TYPE();
     }
@@ -64,7 +64,7 @@ abstract contract AssetController {
     /// @param source The account supplying the asset
     /// @param recipient The asset recipient
     function _transfer(Asset memory asset, address source, address payable recipient) internal {
-        if (asset.assetType == AssetType.Native) {
+        if (asset.assetType == AssetType.ETH) {
             // Ensure neither the token nor the identifier parameters are set
             if ((uint160(asset.token) | asset.identifier) != 0) {
                 revert UNUSED_ASSET_PARAMETERS();
@@ -126,9 +126,9 @@ abstract contract AssetController {
 
         // Use `transfer` if the source is this contract
         if (source == address(this)) {
-            IERC20(token).safeTransfer(recipient, amount);
+            token.safeTransfer(recipient, amount);
         } else {
-            IERC20(token).safeTransferFrom(source, recipient, amount);
+            token.safeTransferFrom(source, recipient, amount);
         }
     }
 
@@ -144,7 +144,7 @@ abstract contract AssetController {
         if (amount != 1) {
             revert INVALID_ERC721_TRANSFER_AMOUNT();
         }
-        IERC721(token).transferFrom(source, recipient, identifier);
+        ERC721(token).transferFrom(source, recipient, identifier);
     }
 
     /// @notice Transfers ERC1155 tokens to a recipient address
@@ -158,7 +158,7 @@ abstract contract AssetController {
     {
         _assertNonZeroAmount(amount);
 
-        IERC1155(token).safeTransferFrom(source, recipient, identifier, amount, new bytes(0));
+        ERC1155(token).safeTransferFrom(source, recipient, identifier, amount, new bytes(0));
     }
 
     /// @dev Ensure that a given asset amount is not zero
