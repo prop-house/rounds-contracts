@@ -16,6 +16,9 @@ interface IFarcasterClaim {
     /// @notice Thrown when there is nothing to claim for a given round.
     error NOTHING_TO_CLAIM();
 
+    /// @notice Thrown when an invalid recipient is provided.
+    error INVALID_RECIPIENT();
+
     /// @notice Thrown when an invalid `Claim` signature is provided.
     error INVALID_SIGNATURE();
 

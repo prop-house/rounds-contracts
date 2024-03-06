@@ -38,6 +38,7 @@ contract FarcasterClaim is IFarcasterClaim, AssetController, Ownable, EIP712 {
         if (!_verifySignature(roundId, fid, to, sig)) revert INVALID_SIGNATURE();
         if (awardsByRound[roundId][fid].amount == 0) revert NOTHING_TO_CLAIM();
         if (hasClaimed[roundId][fid]) revert ALREADY_CLAIMED();
+        if (to == address(0)) revert INVALID_RECIPIENT();
 
         hasClaimed[roundId][fid] = true;
         _transfer(awardsByRound[roundId][fid], address(this), payable(to));
