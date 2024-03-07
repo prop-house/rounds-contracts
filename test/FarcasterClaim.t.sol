@@ -22,15 +22,18 @@ contract FarcasterClaimTest is Test {
         fc = new FarcasterClaim(owner, signer);
     }
 
-    function testFuzz_claimETHValidSig(uint256 value, uint256 roundId, uint256 fid) public {
+    function testFuzz_claimETHValidSig(uint120 value, uint40 roundId, uint40 fid) public {
         vm.assume(value > 0);
 
         vm.deal(address(fc), value);
         bytes memory sig = _signClaim(signerPk, roundId, fid, alice);
 
-        vm.prank(owner);
-        AssetController.Asset memory eth = AssetController.Asset(AssetController.AssetType.ETH, address(0), 0, value);
-        fc.setWinnersForRound(roundId, _toSingletonArray(IFarcasterClaim.Winner({fid: fid, award: eth})));
+        vm.startPrank(owner);
+
+        fc.setAssetForRound(roundId, AssetController.Asset(AssetController.AssetType.ETH, address(0), 0));
+        fc.setWinnersForRound(roundId, _toSingletonArray(IFarcasterClaim.Winner({fid: fid, amount: value})));
+
+        vm.stopPrank();
 
         vm.expectEmit();
         emit IFarcasterClaim.Claimed(roundId, fid, alice);
@@ -38,9 +41,22 @@ contract FarcasterClaimTest is Test {
         vm.prank(bot);
         fc.claim(roundId, fid, alice, sig);
 
+        (bool claimed,) = fc.claimInfoByRoundAndFID(roundId, fid);
+
         assertEq(address(fc).balance, 0);
-        assertEq(fc.hasClaimed(roundId, fid), true);
+        assertEq(claimed, true);
         assertEq(address(alice).balance, value);
+    }
+
+    function test_withdrawEther() public {
+        vm.deal(address(fc), 100e18);
+
+        uint256 balanceBefore = owner.balance;
+
+        vm.prank(owner);
+        fc.withdraw(AssetController.Asset(AssetController.AssetType.ETH, address(0), 0), 100e18);
+
+        assertEq(owner.balance - balanceBefore, 100e18);
     }
 
     function _signClaim(uint256 pk, uint256 roundId, uint256 fid, address to) public returns (bytes memory signature) {

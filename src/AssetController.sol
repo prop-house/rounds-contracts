@@ -11,6 +11,9 @@ abstract contract AssetController {
 
     /// @notice Supported asset types
     enum AssetType {
+        // Default value
+        NONE,
+        // Supported asset types
         ETH,
         ERC20,
         ERC721,
@@ -22,7 +25,6 @@ abstract contract AssetController {
         AssetType assetType;
         address token;
         uint256 identifier;
-        uint256 amount;
     }
 
     /// @notice Thrown when unused asset parameters are populated
@@ -61,43 +63,30 @@ abstract contract AssetController {
 
     /// @dev Transfer a given asset from the provided `from` address to the `to` address
     /// @param asset The asset to transfer, including the asset amount
+    /// @param amount The amount to transfer
     /// @param source The account supplying the asset
     /// @param recipient The asset recipient
-    function _transfer(Asset memory asset, address source, address payable recipient) internal {
+    function _transfer(Asset memory asset, uint256 amount, address source, address payable recipient) internal {
         if (asset.assetType == AssetType.ETH) {
             // Ensure neither the token nor the identifier parameters are set
             if ((uint160(asset.token) | asset.identifier) != 0) {
                 revert UNUSED_ASSET_PARAMETERS();
             }
 
-            _transferETH(recipient, asset.amount);
+            _transferETH(recipient, amount);
         } else if (asset.assetType == AssetType.ERC20) {
             // Ensure that no identifier is supplied
             if (asset.identifier != 0) {
                 revert UNUSED_ASSET_PARAMETERS();
             }
 
-            _transferERC20(asset.token, source, recipient, asset.amount);
+            _transferERC20(asset.token, source, recipient, amount);
         } else if (asset.assetType == AssetType.ERC721) {
-            _transferERC721(asset.token, asset.identifier, source, recipient, asset.amount);
+            _transferERC721(asset.token, asset.identifier, source, recipient, amount);
         } else if (asset.assetType == AssetType.ERC1155) {
-            _transferERC1155(asset.token, asset.identifier, source, recipient, asset.amount);
+            _transferERC1155(asset.token, asset.identifier, source, recipient, amount);
         } else {
             revert INVALID_ASSET_TYPE();
-        }
-    }
-
-    /// @notice Transfers one or more assets from the provided `from` address to the `to` address
-    /// @param assets The assets to transfer, including the asset amounts
-    /// @param source The account supplying the assets
-    /// @param recipient The asset recipient
-    function _transferMany(Asset[] memory assets, address source, address payable recipient) internal {
-        uint256 assetCount = assets.length;
-        for (uint256 i = 0; i < assetCount;) {
-            _transfer(assets[i], source, recipient);
-            unchecked {
-                ++i;
-            }
         }
     }
 

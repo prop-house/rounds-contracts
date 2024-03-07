@@ -14,11 +14,11 @@ contract FarcasterClaim is IFarcasterClaim, AssetController, Ownable, EIP712 {
     /// @notice Address authorized to sign `Claim` messages
     address public signer;
 
-    /// @notice Mapping of Farcaster IDs who have claimed their award for a given round.
-    mapping(uint256 roundId => mapping(uint256 fid => bool claimed)) public hasClaimed;
+    /// @notice Mapping of Round IDs to the asset offered in the round.
+    mapping(uint40 roundId => Asset asset) public assetOfferedInRound;
 
-    /// @notice Mapping of Farcaster IDs to their award for a given round.
-    mapping(uint256 roundId => mapping(uint256 fid => Asset award)) public awardsByRound;
+    /// @notice Mapping of Farcaster IDs to their claim amount and status for a given round.
+    mapping(uint40 roundId => mapping(uint40 fid => ClaimInfo info)) public claimInfoByRoundAndFID;
 
     /// @notice Set owner and signer contract parameters.
     /// @param _owner Contract owner address. Can withdraw and change paramters.
@@ -34,30 +34,29 @@ contract FarcasterClaim is IFarcasterClaim, AssetController, Ownable, EIP712 {
     /// @param fid The Farcaster ID.
     /// @param to The address to send the award to.
     /// @param sig The `Claim` signature.
-    function claim(uint256 roundId, uint256 fid, address to, bytes calldata sig) external {
+    function claim(uint40 roundId, uint40 fid, address to, bytes calldata sig) external {
+        Asset storage asset = assetOfferedInRound[roundId];
+        ClaimInfo storage info = claimInfoByRoundAndFID[roundId][fid];
+
         if (!_verifySignature(roundId, fid, to, sig)) revert INVALID_SIGNATURE();
-        if (awardsByRound[roundId][fid].amount == 0) revert NOTHING_TO_CLAIM();
-        if (hasClaimed[roundId][fid]) revert ALREADY_CLAIMED();
         if (to == address(0)) revert INVALID_RECIPIENT();
 
-        hasClaimed[roundId][fid] = true;
-        _transfer(awardsByRound[roundId][fid], address(this), payable(to));
+        if (asset.assetType == AssetType.NONE) revert INVALID_ASSET();
+        if (info.amount == 0) revert NOTHING_TO_CLAIM();
+        if (info.claimed) revert ALREADY_CLAIMED();
+
+        info.claimed = true;
+        _transfer(asset, info.amount, address(this), payable(to));
 
         emit Claimed(roundId, fid, to);
     }
 
     /// @notice Withdraw an asset from the contract.
     /// @param asset The asset to withdraw.
+    /// @param amount The amount to withdraw.
     /// @dev Only callable by the owner.
-    function withdraw(Asset calldata asset) external onlyOwner {
-        _transfer(asset, address(this), payable(msg.sender));
-    }
-
-    /// @notice Withdraw many assets from the contract.
-    /// @param assets The assets to withdraw.
-    /// @dev Only callable by the owner.
-    function withdrawMany(Asset[] calldata assets) external onlyOwner {
-        _transferMany(assets, address(this), payable(msg.sender));
+    function withdraw(Asset calldata asset, uint256 amount) external onlyOwner {
+        _transfer(asset, amount, address(this), payable(msg.sender));
     }
 
     /// @notice Set signer address. Only callable by owner.
@@ -66,12 +65,21 @@ contract FarcasterClaim is IFarcasterClaim, AssetController, Ownable, EIP712 {
         emit SignerSet(signer, signer = _signer);
     }
 
+    /// @notice Sets the asset for a given round.
+    /// @param roundId The round ID.
+    /// @param asset The asset to offer in the round.
+    function setAssetForRound(uint40 roundId, Asset calldata asset) external onlyOwner {
+        assetOfferedInRound[roundId] = asset;
+
+        emit AssetSet(roundId, asset);
+    }
+
     /// @notice Sets the winners for a given round.
     /// @param roundId The round ID.
     /// @param winners The round winners and their awards.
-    function setWinnersForRound(uint256 roundId, Winner[] calldata winners) external onlyOwner {
+    function setWinnersForRound(uint40 roundId, Winner[] calldata winners) external onlyOwner {
         for (uint256 i = 0; i < winners.length; i++) {
-            awardsByRound[roundId][winners[i].fid] = winners[i].award;
+            claimInfoByRoundAndFID[roundId][winners[i].fid].amount = winners[i].amount;
         }
         emit WinnersSet(roundId, winners);
     }
