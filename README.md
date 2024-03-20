@@ -37,7 +37,7 @@ $ anvil
 #### Deploy (Goerli)
 
 ```shell
-forge script script/Deploy.s.sol --chain 8453 --rpc-url https://mainnet.base.org --broadcast
+forge script script/rounds/nouns/RetroRound.s.sol:RetroRound --chain 8453 --rpc-url https://mainnet.base.org --priority-gas-price 100000000 --broadcast
 ```
 
 ### Cast
