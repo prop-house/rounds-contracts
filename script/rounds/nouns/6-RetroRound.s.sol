@@ -33,7 +33,7 @@ contract RetroRound6 is Script {
         winners[11] = IFarcasterClaim.Winner({fid: 1556, amount: 0.0180296200901481 ether});
         winners[12] = IFarcasterClaim.Winner({fid: 1894, amount: 0.0283322601416613 ether});
         winners[13] = IFarcasterClaim.Winner({fid: 2112, amount: 0.01674179008370895 ether});
-        winners[14] = IFarcasterClaim.Winner({fid: 2235, amount: 0.0077269800 ether});
+        winners[14] = IFarcasterClaim.Winner({fid: 2235, amount: 0.00772698 ether});
         winners[15] = IFarcasterClaim.Winner({fid: 2240, amount: 0.00128783000643915 ether});
         winners[16] = IFarcasterClaim.Winner({fid: 2282, amount: 0.00386349001 ether});
         winners[17] = IFarcasterClaim.Winner({fid: 2329, amount: 0.0025756600128783 ether});
@@ -49,7 +49,7 @@ contract RetroRound6 is Script {
         winners[27] = IFarcasterClaim.Winner({fid: 3791, amount: 0.00128783000643915 ether});
         winners[28] = IFarcasterClaim.Winner({fid: 3827, amount: 0.03734707018673536 ether});
         winners[29] = IFarcasterClaim.Winner({fid: 3895, amount: 0.0412105602060528 ether});
-        winners[30] = IFarcasterClaim.Winner({fid: 4132, amount: 0.0038634900 ether});
+        winners[30] = IFarcasterClaim.Winner({fid: 4132, amount: 0.00386349 ether});
         winners[31] = IFarcasterClaim.Winner({fid: 4134, amount: 0.0025756600128783 ether});
         winners[32] = IFarcasterClaim.Winner({fid: 4167, amount: 0.05022537025112686 ether});
         winners[33] = IFarcasterClaim.Winner({fid: 4384, amount: 0.00643915003219575 ether});
