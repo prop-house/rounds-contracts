@@ -10,8 +10,11 @@ import {AssetController} from 'src/AssetController.sol';
 import {IRound} from 'src/interfaces/IRound.sol';
 
 contract Round is IRound, Initializable, AssetController, EIP712 {
+    /// @notice 100% in basis points.
+    uint16 public constant MAX_BPS = 10_000;
+
     /// @notice EIP-712 typehash for `SetMerkleRoot` message
-    bytes32 public constant SET_MERKLE_ROOT_TYPEHASH = keccak256('SetMerkleRoot(bytes32 merkleRoot,uint96 nonce)');
+    bytes32 public constant SET_MERKLE_ROOT_TYPEHASH = keccak256('SetMerkleRoot(bytes32 merkleRoot,uint88 nonce)');
 
     /// @notice EIP-712 typehash for `Claim` message.
     bytes32 public constant CLAIM_TYPEHASH = keccak256('Claim(uint256 fid,address to)');
@@ -24,16 +27,28 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
     address public admin;
 
     /// @notice The nonce used to prevent signature replay attacks.
-    uint96 public nonce;
+    uint88 public nonce;
 
-    /// @notice The merkle root containing round winner FIDs, verified addresses, and award amounts.
-    bytes32 public merkleRoot;
+    /// @notice Whether fees have been claimed.
+    bool public areFeesClaimed;
+
+    /// @notice The award amount offered in the round.
+    uint256 public awardAmount;
 
     /// @notice The award offered in the round.
     Asset public award;
 
+    /// @notice The claim merkle root containing round winner FIDs, verified addresses, and award amounts.
+    bytes32 public claimMerkleRoot;
+
     /// @notice Whether a FID has claimed their award in the round.
     mapping(uint256 fid => bool hasClaimed) public hasFIDClaimed;
+
+    /// @dev Ensures the caller is the fee claimer.
+    modifier onlyFeeClaimer() {
+        if (msg.sender != factory.feeClaimer()) revert ONLY_FEE_CLAIMER();
+        _;
+    }
 
     /// @dev Ensures the caller is the admin.
     modifier onlyAdmin() {
@@ -41,25 +56,28 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
         _;
     }
 
+    // forgefmt: disable-next-item
     /// @param factory_ The round factory that deployed the round instance.
     /// @param admin_ The admin of the round.
-    /// @param asset The award asset.
-    function initialize(address factory_, address admin_, Asset calldata asset) external initializer {
+    /// @param awardAmount_ The award amount.
+    /// @param award_ The award asset.
+    function initialize(address factory_, address admin_, uint256 awardAmount_, Asset calldata award_) external initializer {
         factory = IRoundFactory(factory_);
         admin = admin_;
-        award = asset;
+        awardAmount = awardAmount_;
+        award = award_;
     }
 
-    /// @notice Set the merkle root containing round winner FIDs, verified addresses, and award amounts.
-    /// @param merkleRoot_ The round claim merkle root.
+    /// @notice Set the claim merkle root containing round winner FIDs, verified addresses, and award amounts.
+    /// @param claimMerkleRoot_ The round claim merkle root.
     /// @param sig The set merkle root admin signature.
-    function setMerkleRoot(bytes32 merkleRoot_, bytes calldata sig) external {
-        if (!_isValidSetMerkleRootSig(merkleRoot_, sig)) revert INVALID_SIGNATURE();
+    function setClaimMerkleRoot(bytes32 claimMerkleRoot_, bytes calldata sig) external {
+        if (!_isValidSetMerkleRootSig(claimMerkleRoot_, sig)) revert INVALID_SIGNATURE();
 
         // Increment the nonce to prevent signature replays.
         nonce += 1;
 
-        emit MerkleRootSet(merkleRoot = merkleRoot_);
+        emit ClaimMerkleRootSet(claimMerkleRoot = claimMerkleRoot_);
     }
 
     /// @notice Claim a round award.
@@ -80,6 +98,18 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
         _transfer(award, amount, address(this), payable(to));
 
         emit Claimed(fid, to, amount);
+    }
+
+    /// @notice Claim fees from the round.
+    function claimFees() external onlyFeeClaimer {
+        if (areFeesClaimed) revert FEES_ALREADY_CLAIMED();
+
+        areFeesClaimed = true;
+
+        uint256 amount = awardAmount * factory.feeBPS() / MAX_BPS;
+        _transfer(award, amount, address(this), payable(factory.feeClaimer()));
+
+        emit FeesClaimed(amount);
     }
 
     /// @notice Withdraw an asset from the contract.
@@ -125,7 +155,7 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
     /// @param proof The merkle proof to prove the FID, address, and amount are in the tree.
     function _isValidClaimLeaf(uint256 fid, address to, uint256 amount, bytes32[] calldata proof) internal view returns (bool) {
         bytes32 leaf = keccak256(abi.encodePacked(fid, to, amount));
-        return MerkleProofLib.verify(proof, merkleRoot, leaf);
+        return MerkleProofLib.verify(proof, claimMerkleRoot, leaf);
     }
 
     /// @dev Receive ETH for award claims.
