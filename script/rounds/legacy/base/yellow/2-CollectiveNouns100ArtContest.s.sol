@@ -6,8 +6,6 @@ import {AssetController} from 'src/AssetController.sol';
 import {FarcasterClaimV1} from 'src/legacy/FarcasterClaimV1.sol';
 import {IFarcasterClaimV1} from 'src/legacy/interfaces/IFarcasterClaimV1.sol';
 
-// forge script script/rounds/legacy/base/yellow/2-CollectiveNouns100ArtContest.s.sol:CollectiveNouns100ArtContest2 --chain 8453 --rpc-url https://mainnet.base.org --priority-gas-price 10000000
-
 contract CollectiveNouns100ArtContest2 is Script {
     function run() public {
         uint256 ownerKey = vm.envUint('OWNER_PRIVATE_KEY');
