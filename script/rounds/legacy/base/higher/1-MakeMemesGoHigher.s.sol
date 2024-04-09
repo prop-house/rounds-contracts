@@ -15,7 +15,7 @@ contract MakeMemesGoHigher1 is Script {
 
         FarcasterClaimV1 fc = FarcasterClaimV1(payable(vm.envAddress('FARCASTER_CLAIM_ADDRESS')));
 
-        // ETH is offered in the round.
+        // HIGHER is offered in the round.
         fc.setAssetForRound(
             ROUND_ID,
             AssetController.Asset(
