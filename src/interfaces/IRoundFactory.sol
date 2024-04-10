@@ -4,20 +4,31 @@ pragma solidity 0.8.23;
 import {AssetController} from 'src/AssetController.sol';
 
 interface IRoundFactory {
-    /// @notice The round configuration.
-    struct RoundConfig {
+    /// @notice All round types.
+    enum RoundType {
+        Single
+    }
+
+    /// @notice All round versions.
+    enum RoundVersion {
+        V1
+    }
+
+    /// @notice The single round V1 configuration.
+    struct SingleRoundV1Config {
         /// @dev The round ID.
         uint40 roundId;
-        /// @dev The round admin.
-        address admin;
+        /// @dev The initial round admin.
+        address initialAdmin;
+        /// @dev Whether the round fee is enabled.
+        bool isFeeEnabled;
+        /// @dev Whether claim leaf verification is enabled.
+        bool isLeafVerificationEnabled;
         /// @dev The award asset amount.
-        uint256 amount;
+        uint256 awardAmount;
         /// @dev The award asset information.
         AssetController.Asset award;
     }
-
-    /// @notice Thrown when the round beacon owner is not the factory contract.
-    error ROUND_BEACON_OWNER_NOT_FACTORY();
 
     /// @notice Thrown when the fee BPS is above the maximum allowable fee.
     error FEE_BPS_TOO_HIGH();
@@ -32,7 +43,15 @@ interface IRoundFactory {
     event FeeBPSSet(uint16 newFeeBPS);
 
     /// @notice Emitted when a new round is deployed.
-    event RoundDeployed(address round, uint40 roundId, address admin, uint256 awardAmount, AssetController.Asset award);
+    /// @param round The deployed round address.
+    /// @param config The round configuration.
+    event SingleRoundV1Deployed(address round, SingleRoundV1Config config);
+
+    /// @param owner The owner of the factory contract and child round contracts.
+    /// @param signer The server address that signs message for functions that require server authorization.
+    /// @param feeClaimer The address with permission to claim fees.
+    /// @param feeBPS The fee percentage for all rounds with fee enabled.
+    function initalize(address owner, address signer, address feeClaimer, uint16 feeBPS) external;
 
     /// @notice The owner of the factory contract and child round contracts.
     function owner() external view returns (address);

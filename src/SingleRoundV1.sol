@@ -4,17 +4,17 @@ pragma solidity 0.8.23;
 import {EIP712} from 'solady/utils/EIP712.sol';
 import {Initializable} from 'solady/utils/Initializable.sol';
 import {SignatureCheckerLib} from 'solady/utils/SignatureCheckerLib.sol';
+import {ISingleRoundV1} from 'src/interfaces/ISingleRoundV1.sol';
 import {MerkleProofLib} from 'solady/utils/MerkleProofLib.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 import {AssetController} from 'src/AssetController.sol';
-import {IRound} from 'src/interfaces/IRound.sol';
 
-contract Round is IRound, Initializable, AssetController, EIP712 {
+contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712 {
     /// @notice 100% in basis points.
     uint16 public constant MAX_BPS = 10_000;
 
     /// @notice EIP-712 typehash for `SetMerkleRoot` message
-    bytes32 public constant SET_MERKLE_ROOT_TYPEHASH = keccak256('SetMerkleRoot(bytes32 merkleRoot,uint88 nonce)');
+    bytes32 public constant SET_MERKLE_ROOT_TYPEHASH = keccak256('SetMerkleRoot(bytes32 merkleRoot,uint40 nonce)');
 
     /// @notice EIP-712 typehash for `Claim` message.
     bytes32 public constant CLAIM_TYPEHASH = keccak256('Claim(uint256 fid,address to)');
@@ -27,13 +27,19 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
     address public admin;
 
     /// @notice The nonce used to prevent signature replay attacks.
-    uint88 public nonce;
+    uint40 public nonce;
 
-    /// @notice Whether fees have been claimed.
-    bool public areFeesClaimed;
+    /// @notice Whether the merkle tree leaf verification is enabled.
+    bool public isLeafVerificationEnabled;
 
-    /// @notice The award amount offered in the round.
-    uint256 public awardAmount;
+    /// @notice Whether the fee is enabled on the round.
+    bool public isFeeEnabled;
+
+    /// @notice Whether fee has been claimed.
+    bool public isFeeClaimed;
+
+    /// @notice The fee charged for the round.
+    uint256 public fee;
 
     /// @notice The award offered in the round.
     Asset public award;
@@ -56,16 +62,25 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
         _;
     }
 
-    // forgefmt: disable-next-item
     /// @param factory_ The round factory that deployed the round instance.
-    /// @param admin_ The admin of the round.
-    /// @param awardAmount_ The award amount.
-    /// @param award_ The award asset.
-    function initialize(address factory_, address admin_, uint256 awardAmount_, Asset calldata award_) external initializer {
+    /// @param config The round configuration.
+    function initialize(address factory_, IRoundFactory.SingleRoundV1Config calldata config) external initializer {
         factory = IRoundFactory(factory_);
-        admin = admin_;
-        awardAmount = awardAmount_;
-        award = award_;
+        admin = config.initialAdmin;
+        award = config.award;
+
+        isFeeEnabled = config.isFeeEnabled;
+        isLeafVerificationEnabled = config.isLeafVerificationEnabled;
+
+        if (config.isFeeEnabled) {
+            fee = config.awardAmount * factory.feeBPS() / MAX_BPS;
+        }
+    }
+
+    /// @notice Set the round admin.
+    function setAdmin(address newAdmin) external onlyAdmin {
+        if (newAdmin == address(0)) revert INVALID_ADMIN();
+        emit AdminSet(admin = newAdmin);
     }
 
     /// @notice Set the claim merkle root containing round winner FIDs, verified addresses, and award amounts.
@@ -90,7 +105,7 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
         if (hasFIDClaimed[fid]) revert ALREADY_CLAIMED();
 
         if (!_isValidClaimSig(fid, to, sig)) revert INVALID_SIGNATURE();
-        if (!_isValidClaimLeaf(fid, to, amount, proof)) revert INVALID_LEAF();
+        if (isLeafVerificationEnabled && !_isValidClaimLeaf(fid, to, amount, proof)) revert INVALID_LEAF();
         if (to == address(0)) revert INVALID_RECIPIENT();
         if (amount == 0) revert NOTHING_TO_CLAIM();
 
@@ -100,16 +115,31 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
         emit Claimed(fid, to, amount);
     }
 
-    /// @notice Claim fees from the round.
-    function claimFees() external onlyFeeClaimer {
-        if (areFeesClaimed) revert FEES_ALREADY_CLAIMED();
+    /// @notice Claim the round fee.
+    function claimFee() external onlyFeeClaimer {
+        if (!isFeeEnabled) revert FEE_DISABLED();
+        if (isFeeClaimed) revert FEE_ALREADY_CLAIMED();
 
-        areFeesClaimed = true;
+        isFeeClaimed = true;
+        _transfer(award, fee, address(this), payable(factory.feeClaimer()));
 
-        uint256 amount = awardAmount * factory.feeBPS() / MAX_BPS;
-        _transfer(award, amount, address(this), payable(factory.feeClaimer()));
+        emit FeeClaimed(fee);
+    }
 
-        emit FeesClaimed(amount);
+    /// @notice Reduce the round fee.
+    /// @param newFee The reduced round fee.
+    function reduceFee(uint256 newFee) external onlyFeeClaimer {
+        if (newFee >= fee) revert FEE_NOT_REDUCED();
+
+        emit FeeReduced(fee = newFee);
+    }
+
+    /// @notice Disable the fee for the round.
+    function disableFee() external onlyFeeClaimer {
+        if (!isFeeEnabled) revert FEE_ALREADY_DISABLED();
+
+        isFeeEnabled = false;
+        emit FeeDisabled();
     }
 
     /// @notice Withdraw an asset from the contract.
@@ -123,6 +153,12 @@ contract Round is IRound, Initializable, AssetController, EIP712 {
     /// @dev EIP-712 helper.
     function hashTypedData(bytes32 structHash) external view returns (bytes32) {
         return _hashTypedData(structHash);
+    }
+
+    /// @dev Get the asset ID for the given asset.
+    /// @param asset The asset to get the ID for.
+    function _getAssetID(Asset memory asset) internal pure returns (bytes32) {
+        return keccak256(abi.encode(asset));
     }
 
     /// @dev EIP-712 domain name and contract version.

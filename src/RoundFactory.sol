@@ -2,18 +2,19 @@
 pragma solidity 0.8.23;
 
 import {Ownable} from 'solady/auth/Ownable.sol';
+import {Initializable} from 'solady/utils/Initializable.sol';
 import {BeaconProxy} from 'openzeppelin/contracts/proxy/beacon/BeaconProxy.sol';
 import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
-import {UUPSUpgradeable} from 'solady/utils/UUPSUpgradeable.sol';
+import {UUPSUpgradeable} from 'openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol';
+import {ISingleRoundV1} from 'src/interfaces/ISingleRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
-import {IRound} from 'src/interfaces/IRound.sol';
 
-contract RoundFactory is IRoundFactory, UUPSUpgradeable, Ownable {
+contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable {
     /// @notice The maximum allowable fee percentage (10%).
     uint16 public constant MAX_FEE_BPS = 1_000;
 
-    /// @notice The round beacon contract.
-    UpgradeableBeacon public immutable roundBeacon;
+    /// @notice The single round V1 beacon contract.
+    UpgradeableBeacon public immutable singleRoundV1Beacon;
 
     /// @notice Address authorized to sign `Claim` messages
     address public signer;
@@ -24,16 +25,21 @@ contract RoundFactory is IRoundFactory, UUPSUpgradeable, Ownable {
     /// @notice The fee percentage for all rounds with fee enabled.
     uint16 public feeBPS;
 
-    /// @param roundBeacon_ The round beacon contract address.
-    /// @param owner_ The address that manages all claim contracts.
-    /// @param signer_ Server address that must sign `Claim` messages.
-    constructor(address roundBeacon_, address owner_, address signer_) {
+    /// @param singleRoundV1Beacon_ The round beacon contract address.
+    constructor(address singleRoundV1Beacon_) {
+        singleRoundV1Beacon = UpgradeableBeacon(singleRoundV1Beacon_);
+    }
+
+    /// @param owner_ The owner of the factory contract and child round contracts.
+    /// @param signer_ The server address that signs message for functions that require server authorization.
+    /// @param feeClaimer_ The address with permission to claim fees.
+    /// @param feeBPS_ The fee percentage for all rounds with fee enabled.
+    function initalize(address owner_, address signer_, address feeClaimer_, uint16 feeBPS_) external initializer {
         _initializeOwner(owner_);
 
-        roundBeacon = UpgradeableBeacon(roundBeacon_);
-        signer = signer_;
-
-        if (roundBeacon.owner() != address(this)) revert ROUND_BEACON_OWNER_NOT_FACTORY();
+        emit SignerSet(signer = signer_);
+        emit FeeClaimerSet(feeClaimer = feeClaimer_);
+        emit FeeBPSSet(feeBPS = feeBPS_);
     }
 
     /// @notice The owner of the factory contract and child round contracts.
@@ -41,9 +47,9 @@ contract RoundFactory is IRoundFactory, UUPSUpgradeable, Ownable {
         return super.owner();
     }
 
-    /// @notice Predicts a round address for a given configuration.
+    /// @notice Predicts a single round address for a given configuration.
     /// @param config The round configuration.
-    function predictRoundAddress(RoundConfig calldata config) external view returns (address round) {
+    function predictSingleRoundV1Address(SingleRoundV1Config calldata config) external view returns (address round) {
         round = address(
             uint160(
                 uint256(
@@ -51,9 +57,11 @@ contract RoundFactory is IRoundFactory, UUPSUpgradeable, Ownable {
                         abi.encodePacked(
                             bytes1(0xff),
                             address(this),
-                            _salt(config),
+                            _singleRoundV1Salt(config),
                             keccak256(
-                                abi.encodePacked(type(BeaconProxy).creationCode, abi.encode(roundBeacon, new bytes(0)))
+                                abi.encodePacked(
+                                    type(BeaconProxy).creationCode, abi.encode(singleRoundV1Beacon, new bytes(0))
+                                )
                             )
                         )
                     )
@@ -62,19 +70,19 @@ contract RoundFactory is IRoundFactory, UUPSUpgradeable, Ownable {
         );
     }
 
-    /// @notice Deploy a new round contract.
+    /// @notice Deploy a V1 single round.
     /// @param config The round configuration.
-    function deployRound(RoundConfig calldata config) external returns (address round) {
-        round = address(new BeaconProxy{salt: _salt(config)}(address(roundBeacon), new bytes(0)));
-        IRound(round).initialize(address(this), config.admin, config.amount, config.award);
+    function deploySingleRoundV1(SingleRoundV1Config calldata config) external returns (address round) {
+        round = address(new BeaconProxy{salt: _singleRoundV1Salt(config)}(address(singleRoundV1Beacon), new bytes(0)));
 
-        emit RoundDeployed(round, config.roundId, config.admin, config.amount, config.award);
+        ISingleRoundV1(round).initialize(address(this), config);
+        emit SingleRoundV1Deployed(round, config);
     }
 
     /// @notice Upgrade the round implementation.
     /// @param newImplementation The new implementation address.
-    function setRoundImplementation(address newImplementation) external onlyOwner {
-        roundBeacon.upgradeTo(newImplementation);
+    function setSingleRoundV1Implementation(address newImplementation) external onlyOwner {
+        singleRoundV1Beacon.upgradeTo(newImplementation);
     }
 
     /// @notice Update the server address that signs message for functions that
@@ -97,10 +105,10 @@ contract RoundFactory is IRoundFactory, UUPSUpgradeable, Ownable {
         emit FeeBPSSet(feeBPS = newFeeBPS);
     }
 
-    /// @dev Returns the salt for a given round ID.
+    /// @dev Returns the salt for a V1 single round.
     /// @param config The round configuration.
-    function _salt(RoundConfig calldata config) internal pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(config.roundId, config.admin, config.amount, config.award));
+    function _singleRoundV1Salt(SingleRoundV1Config calldata config) internal pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(RoundType.Single, RoundVersion.V1, config));
     }
 
     /// @dev Allows the owner to upgrade the claim factory implementation.
