@@ -17,7 +17,7 @@ contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712
     bytes32 public constant SET_MERKLE_ROOT_TYPEHASH = keccak256('SetMerkleRoot(bytes32 merkleRoot,uint40 nonce)');
 
     /// @notice EIP-712 typehash for `Claim` message.
-    bytes32 public constant CLAIM_TYPEHASH = keccak256('Claim(uint256 fid,address to)');
+    bytes32 public constant CLAIM_TYPEHASH = keccak256('Claim(uint256 fid,address to,uint256 amount)');
 
     /// @notice The factory contract that deployed the round instance.
     IRoundFactory public factory;
@@ -104,7 +104,7 @@ contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712
     function claim(uint256 fid, address to, uint256 amount, bytes32[] calldata proof, bytes calldata sig) external {
         if (hasFIDClaimed[fid]) revert ALREADY_CLAIMED();
 
-        if (!_isValidClaimSig(fid, to, sig)) revert INVALID_SIGNATURE();
+        if (!_isValidClaimSig(fid, to, amount, sig)) revert INVALID_SIGNATURE();
         if (isLeafVerificationEnabled && !_isValidClaimLeaf(fid, to, amount, proof)) revert INVALID_LEAF();
         if (to == address(0)) revert INVALID_RECIPIENT();
         if (amount == 0) revert NOTHING_TO_CLAIM();
@@ -168,19 +168,21 @@ contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712
 
     /// @dev Verify EIP-712 `SetMerkleRoot` signature.
     /// @param root The merkle root.
-    /// @param signature The signature authenticating the claim information.
-    function _isValidSetMerkleRootSig(bytes32 root, bytes calldata signature) internal view returns (bool) {
+    /// @param sig The signature authenticating the claim information.
+    function _isValidSetMerkleRootSig(bytes32 root, bytes calldata sig) internal view returns (bool) {
         bytes32 digest = _hashTypedData(keccak256(abi.encode(SET_MERKLE_ROOT_TYPEHASH, root, nonce)));
-        return SignatureCheckerLib.isValidSignatureNowCalldata(admin, digest, signature);
+        return SignatureCheckerLib.isValidSignatureNowCalldata(admin, digest, sig);
     }
 
+    // forgefmt: disable-next-item
     /// @dev Verify EIP-712 `Claim` signature.
     /// @param fid The farcaster ID of the claimer.
     /// @param to The recipient address.
-    /// @param signature The signature authenticating the claim information.
-    function _isValidClaimSig(uint256 fid, address to, bytes calldata signature) internal view returns (bool) {
-        bytes32 digest = _hashTypedData(keccak256(abi.encode(CLAIM_TYPEHASH, fid, to)));
-        return SignatureCheckerLib.isValidSignatureNowCalldata(factory.signer(), digest, signature);
+    /// @param amount The amount of tokens owed.
+    /// @param sig The signature authenticating the claim information.
+    function _isValidClaimSig(uint256 fid, address to, uint256 amount, bytes calldata sig) internal view returns (bool) {
+        bytes32 digest = _hashTypedData(keccak256(abi.encode(CLAIM_TYPEHASH, fid, to, amount)));
+        return SignatureCheckerLib.isValidSignatureNowCalldata(factory.signer(), digest, sig);
     }
 
     // forgefmt: disable-next-item
