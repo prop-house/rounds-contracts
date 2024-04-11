@@ -23,9 +23,8 @@ contract RoundFactoryTest is Test {
     function setUp() public {
         (signer, signerPk) = makeAddrAndKey('signer');
 
-        address roundBeacon = address(new UpgradeableBeacon(address(new SingleRoundV1()), owner));
-
-        address factoryImpl = address(new RoundFactory(roundBeacon));
+        address singleRoundV1Beacon = address(new UpgradeableBeacon(address(new SingleRoundV1()), owner));
+        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon));
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(factoryImpl, abi.encodeCall(IRoundFactory.initalize, (owner, signer, feeClaimer, 500)))
