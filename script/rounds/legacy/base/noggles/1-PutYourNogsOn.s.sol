@@ -15,7 +15,7 @@ contract PutYourNogsOn1 is Script {
 
         FarcasterClaimV1 fc = FarcasterClaimV1(payable(vm.envAddress('FARCASTER_CLAIM_ADDRESS')));
 
-        // ETH is offered in the round.
+        // NOGS is offered in the round.
         fc.setAssetForRound(
             ROUND_ID,
             AssetController.Asset(
