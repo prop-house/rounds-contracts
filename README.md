@@ -1,4 +1,4 @@
-# Rounds Claim Contracts
+# Rounds Contracts
 
 ## Contract Development
 
