@@ -26,7 +26,10 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     uint16 public feeBPS;
 
     /// @param singleRoundV1Beacon_ The round beacon contract address.
+    /// @dev Disable any future initialization.
     constructor(address singleRoundV1Beacon_) {
+        _disableInitializers();
+            
         singleRoundV1Beacon = UpgradeableBeacon(singleRoundV1Beacon_);
     }
 
@@ -34,7 +37,7 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param signer_ The server address that signs message for functions that require server authorization.
     /// @param feeClaimer_ The address with permission to claim fees.
     /// @param feeBPS_ The fee percentage for all rounds with fee enabled.
-    function initalize(address owner_, address signer_, address feeClaimer_, uint16 feeBPS_) external initializer {
+    function initialize(address owner_, address signer_, address feeClaimer_, uint16 feeBPS_) external initializer {
         _initializeOwner(owner_);
 
         emit SignerSet(signer = signer_);

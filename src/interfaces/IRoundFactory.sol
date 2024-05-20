@@ -51,7 +51,7 @@ interface IRoundFactory {
     /// @param signer The server address that signs message for functions that require server authorization.
     /// @param feeClaimer The address with permission to claim fees.
     /// @param feeBPS The fee percentage for all rounds with fee enabled.
-    function initalize(address owner, address signer, address feeClaimer, uint16 feeBPS) external;
+    function initialize(address owner, address signer, address feeClaimer, uint16 feeBPS) external;
 
     /// @notice The owner of the factory contract and child round contracts.
     function owner() external view returns (address);

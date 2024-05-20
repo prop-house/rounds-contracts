@@ -62,6 +62,11 @@ contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712
         _;
     }
 
+    /// @dev Disable any future initialization.
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @param factory_ The round factory that deployed the round instance.
     /// @param config The round configuration.
     function initialize(address factory_, IRoundFactory.SingleRoundV1Config calldata config) external initializer {

@@ -25,7 +25,7 @@ contract DeployV2 is Script {
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
-                    factoryImpl, abi.encodeCall(IRoundFactory.initalize, (owner, signer, feeClaimer, feeBPS))
+                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, feeClaimer, feeBPS))
                 )
             )
         );

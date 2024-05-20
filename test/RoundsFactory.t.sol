@@ -27,7 +27,7 @@ contract RoundFactoryTest is Test {
         address factoryImpl = address(new RoundFactory(singleRoundV1Beacon));
         factory = RoundFactory(
             address(
-                new ERC1967Proxy(factoryImpl, abi.encodeCall(IRoundFactory.initalize, (owner, signer, feeClaimer, 500)))
+                new ERC1967Proxy(factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, feeClaimer, 500)))
             )
         );
     }
