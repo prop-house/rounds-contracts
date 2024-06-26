@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import {Script} from 'forge-std/Script.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
-import {SingleRoundV1} from 'src/SingleRoundV1.sol';
+import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 import {SafeCast} from 'openzeppelin/contracts/utils/math/SafeCast.sol';
 import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';

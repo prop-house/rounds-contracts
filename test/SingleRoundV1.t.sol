@@ -6,8 +6,8 @@ import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/Upgradeable
 import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {ISingleRoundV1} from 'src/interfaces/ISingleRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
+import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
 import {AssetController} from 'src/AssetController.sol';
-import {SingleRoundV1} from 'src/SingleRoundV1.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 
 contract SingleRoundV1Test is Test {
@@ -30,7 +30,9 @@ contract SingleRoundV1Test is Test {
         address factoryImpl = address(new RoundFactory(singleRoundV1Beacon));
         factory = RoundFactory(
             address(
-                new ERC1967Proxy(factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, feeClaimer, 500)))
+                new ERC1967Proxy(
+                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, feeClaimer, 500))
+                )
             )
         );
 

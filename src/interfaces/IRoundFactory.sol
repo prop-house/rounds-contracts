@@ -30,6 +30,18 @@ interface IRoundFactory {
         AssetController.Asset award;
     }
 
+    /// @notice The recurring round V1 configuration.
+    struct RecurringRoundV1Config {
+        /// @dev The initial round owner.
+        address initialOwner;
+        /// @dev Whether the round fee is enabled.
+        bool isFeeEnabled;
+        /// @dev Whether claim leaf verification is enabled.
+        bool isLeafVerificationEnabled;
+        /// @dev The award asset information.
+        AssetController.Asset award;
+    }
+
     /// @notice Thrown when the fee BPS is above the maximum allowable fee.
     error FEE_BPS_TOO_HIGH();
 

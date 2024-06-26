@@ -29,7 +29,7 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @dev Disable any future initialization.
     constructor(address singleRoundV1Beacon_) {
         _disableInitializers();
-            
+
         singleRoundV1Beacon = UpgradeableBeacon(singleRoundV1Beacon_);
     }
 
