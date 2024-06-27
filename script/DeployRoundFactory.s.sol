@@ -5,11 +5,12 @@ import {Script} from 'forge-std/Script.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
+import {RecurringRoundV1} from 'src/rounds/RecurringRoundV1.sol';
 import {SafeCast} from 'openzeppelin/contracts/utils/math/SafeCast.sol';
 import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
-contract DeployV2 is Script {
+contract DeployRoundFactory is Script {
     function run() public returns (RoundFactory factory) {
         uint256 deployerKey = vm.envUint('DEPLOYER_PRIVATE_KEY');
         vm.startBroadcast(deployerKey);
@@ -20,7 +21,8 @@ contract DeployV2 is Script {
         uint16 feeBPS = SafeCast.toUint16(vm.envUint('FEE_BPS'));
 
         address singleRoundV1Beacon = address(new UpgradeableBeacon(address(new SingleRoundV1()), owner));
-        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon));
+        address recurringRoundV1Beacon = address(new UpgradeableBeacon(address(new RecurringRoundV1()), owner));
+        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon, recurringRoundV1Beacon));
 
         factory = RoundFactory(
             address(

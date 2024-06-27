@@ -27,7 +27,7 @@ contract SingleRoundV1Test is Test {
         (signer, signerPk) = makeAddrAndKey('signer');
 
         address singleRoundV1Beacon = address(new UpgradeableBeacon(address(new SingleRoundV1()), owner));
-        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon));
+        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon, address(0)));
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
