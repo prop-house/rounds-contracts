@@ -6,7 +6,8 @@ import {AssetController} from 'src/AssetController.sol';
 interface IRoundFactory {
     /// @notice All round types.
     enum RoundType {
-        Single
+        Single,
+        Recurring
     }
 
     /// @notice All round versions.
@@ -30,6 +31,20 @@ interface IRoundFactory {
         AssetController.Asset award;
     }
 
+    /// @notice The recurring round V1 configuration.
+    struct RecurringRoundV1Config {
+        /// @dev The recurring round series ID.
+        uint40 seriesId;
+        /// @dev The initial round owner.
+        address initialOwner;
+        /// @dev Whether the round fee is enabled.
+        bool isFeeEnabled;
+        /// @dev Whether claim leaf verification is enabled.
+        bool isLeafVerificationEnabled;
+        /// @dev The award asset information.
+        AssetController.Asset award;
+    }
+
     /// @notice Thrown when the fee BPS is above the maximum allowable fee.
     error FEE_BPS_TOO_HIGH();
 
@@ -42,10 +57,15 @@ interface IRoundFactory {
     /// @notice Emitted when the fee BPS is updated.
     event FeeBPSSet(uint16 newFeeBPS);
 
-    /// @notice Emitted when a new round is deployed.
+    /// @notice Emitted when a new v1 single round is deployed.
     /// @param round The deployed round address.
     /// @param config The round configuration.
     event SingleRoundV1Deployed(address round, SingleRoundV1Config config);
+
+    /// @notice Emitted when a new v1 recurring round is deployed.
+    /// @param round The deployed round address.
+    /// @param config The round configuration.
+    event RecurringRoundV1Deployed(address round, RecurringRoundV1Config config);
 
     /// @param owner The owner of the factory contract and child round contracts.
     /// @param signer The server address that signs message for functions that require server authorization.

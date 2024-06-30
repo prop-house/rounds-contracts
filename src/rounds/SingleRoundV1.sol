@@ -173,7 +173,7 @@ contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712
 
     /// @dev Verify EIP-712 `SetMerkleRoot` signature.
     /// @param root The merkle root.
-    /// @param sig The signature authenticating the claim information.
+    /// @param sig The signature authenticating the merkle root information.
     function _isValidSetMerkleRootSig(bytes32 root, bytes calldata sig) internal view returns (bool) {
         bytes32 digest = _hashTypedData(keccak256(abi.encode(SET_MERKLE_ROOT_TYPEHASH, root, nonce)));
         return SignatureCheckerLib.isValidSignatureNowCalldata(admin, digest, sig);
