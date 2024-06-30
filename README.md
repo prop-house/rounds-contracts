@@ -2,7 +2,7 @@
   <p align="center">
     <a href="https://rounds.wtf/" target="blank"><img src="https://i.imgur.com/WJb8mWi.png" width="200" alt="Rounds Logo" /></a>
   </p>
-  <h1>Round Contracts</h1>
+  <h1>Rounds Contracts</h1>
   <p>The smart contracts powering <a href="https://rounds.wtf/" target="blank">rounds.wtf</a></p>
 </div>
 
