@@ -5,7 +5,7 @@ libs = ['lib']
 auto_detect_solc = true
 bytecode_hash = 'none'
 optimizer_runs = 200
-evm_version = 'paris'
+evm_version = 'shanghai'
 
 [fmt]
 quote_style = 'single'
