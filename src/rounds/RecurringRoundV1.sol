@@ -107,8 +107,8 @@ contract RecurringRoundV1 is IRecurringRoundV1, Initializable, AssetController, 
         if (to == address(0)) revert INVALID_RECIPIENT();
         if (amount == 0) revert NOTHING_TO_CLAIM();
 
-        // Fees are only earned on claimed funds.
-        feeEarned += uint128(amount * factory.feeBPS() / MAX_BPS);
+        // Fees are only earned on claimed funds, if enabled.
+        if (isFeeEnabled) feeEarned += uint128(amount * factory.feeBPS() / MAX_BPS);
 
         hasFIDClaimedForRound[roundId][fid] = true;
         _transfer(award, amount, address(this), payable(to));
@@ -116,11 +116,9 @@ contract RecurringRoundV1 is IRecurringRoundV1, Initializable, AssetController, 
         emit Claimed(roundId, fid, to, amount);
     }
 
-    /// @notice Claim the round fee.
+    /// @notice Claim earned round fees.
     /// @dev Anyone can call this function.
     function claimFee() external {
-        if (!isFeeEnabled) revert FEE_DISABLED();
-
         uint128 claimableFee = feeEarned - feeClaimed;
         if (claimableFee == 0) revert NO_FEE_TO_CLAIM();
 
@@ -134,6 +132,7 @@ contract RecurringRoundV1 is IRecurringRoundV1, Initializable, AssetController, 
     /// @param newFee The reduced round fee.
     function reduceFee(uint128 newFee) external onlyFeeClaimer {
         if (newFee >= feeEarned) revert FEE_NOT_REDUCED();
+        if (newFee < feeClaimed) revert FEE_ALREADY_CLAIMED();
 
         emit FeeReduced(feeEarned, feeEarned = newFee);
     }

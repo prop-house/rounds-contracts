@@ -13,6 +13,9 @@ interface IRecurringRoundV1 {
     /// @notice Thrown when the reduced fee is not less than the current fee.
     error FEE_NOT_REDUCED();
 
+    /// @notice Thrown when attempting to reduce the fee below an amount that has already been claimed.
+    error FEE_ALREADY_CLAIMED();
+
     /// @notice Thrown when fees are already disabled.
     error FEE_ALREADY_DISABLED();
 
