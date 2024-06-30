@@ -43,7 +43,7 @@ $ anvil
 #### Deploy (Goerli)
 
 ```shell
-forge script script/DeployV2.s.sol:Deploy --chain <chain_id> --rpc-url <rpc_url> --priority-gas-price 100000000 --broadcast --verify
+forge script script/DeployRoundFactory.s.sol:Deploy --chain <chain_id> --rpc-url <rpc_url> --priority-gas-price 100000000 --broadcast --verify
 ```
 
 ### Cast
