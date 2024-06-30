@@ -56,11 +56,12 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
         return super.owner();
     }
 
+    // forgefmt: disable-next-item
     /// @notice Predicts a v1 single round address for a given configuration.
     /// @param config The round configuration.
     function predictSingleRoundV1Address(SingleRoundV1Config calldata config) external view returns (address round) {
         round = _predictRoundAddress(
-            singleRoundV1Beacon, _generateSalt(RoundType.Single, RoundVersion.V1, abi.encode(config))
+            singleRoundV1Beacon, _getSalt(RoundType.Single, RoundVersion.V1, abi.encode(config))
         );
     }
 
@@ -69,7 +70,7 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param config The round configuration.
     function predictRecurringRoundV1Address(RecurringRoundV1Config calldata config) external view returns (address round) {
         round = _predictRoundAddress(
-            recurringRoundV1Beacon, _generateSalt(RoundType.Recurring, RoundVersion.V1, abi.encode(config))
+            recurringRoundV1Beacon, _getSalt(RoundType.Recurring, RoundVersion.V1, abi.encode(config))
         );
     }
 
@@ -77,7 +78,7 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param config The round configuration.
     function deploySingleRoundV1(SingleRoundV1Config calldata config) external returns (address round) {
         round = address(
-            new BeaconProxy{salt: _generateSalt(RoundType.Single, RoundVersion.V1, abi.encode(config))}(
+            new BeaconProxy{salt: _getSalt(RoundType.Single, RoundVersion.V1, abi.encode(config))}(
                 singleRoundV1Beacon, new bytes(0)
             )
         );
@@ -89,7 +90,7 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param config The round configuration.
     function deployRecurringRoundV1(RecurringRoundV1Config calldata config) external returns (address round) {
         round = address(
-            new BeaconProxy{salt: _generateSalt(RoundType.Recurring, RoundVersion.V1, abi.encode(config))}(
+            new BeaconProxy{salt: _getSalt(RoundType.Recurring, RoundVersion.V1, abi.encode(config))}(
                 recurringRoundV1Beacon, new bytes(0)
             )
         );
@@ -134,7 +135,7 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param type_ The round type.
     /// @param version The round version.
     /// @param config The round configuration.
-    function _generateSalt(RoundType type_, RoundVersion version, bytes memory config) internal pure returns (bytes32 salt) {
+    function _getSalt(RoundType type_, RoundVersion version, bytes memory config) internal pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(type_, version, config));
     }
 

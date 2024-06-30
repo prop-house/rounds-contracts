@@ -34,7 +34,7 @@ interface IRoundFactory {
     /// @notice The recurring round V1 configuration.
     struct RecurringRoundV1Config {
         /// @dev The recurring round series ID.
-        uint256 seriesId;
+        uint40 seriesId;
         /// @dev The initial round owner.
         address initialOwner;
         /// @dev Whether the round fee is enabled.
