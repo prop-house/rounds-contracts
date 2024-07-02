@@ -20,8 +20,11 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @notice The v1 recurring round beacon contract address.
     address public immutable recurringRoundV1Beacon;
 
-    /// @notice Address authorized to sign `Claim` messages
+    /// @notice Address authorized to sign `Claim` messages.
     address public signer;
+
+    /// @notice Address authorized to distribute funds via a contract call.
+    address public distributor;
 
     /// @notice The address with permission to claim fees.
     address public feeClaimer;
@@ -39,14 +42,17 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
         recurringRoundV1Beacon = recurringRoundV1Beacon_;
     }
 
+    // forgefmt: disable-next-item
     /// @param owner_ The owner of the factory contract and child round contracts.
     /// @param signer_ The server address that signs message for functions that require server authorization.
+    /// @param distributor_ The address authorized to distribute funds via a contract call.
     /// @param feeClaimer_ The address with permission to claim fees.
     /// @param feeBPS_ The fee percentage for all rounds with fee enabled.
-    function initialize(address owner_, address signer_, address feeClaimer_, uint16 feeBPS_) external initializer {
+    function initialize(address owner_, address signer_, address distributor_, address feeClaimer_, uint16 feeBPS_) external initializer {
         _initializeOwner(owner_);
 
         emit SignerSet(signer = signer_);
+        emit DistributorSet(distributor = distributor_);
         emit FeeClaimerSet(feeClaimer = feeClaimer_);
         emit FeeBPSSet(feeBPS = feeBPS_);
     }
@@ -107,6 +113,12 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param newSigner The new signer address.
     function setSigner(address newSigner) external onlyOwner {
         emit SignerSet(signer = newSigner);
+    }
+
+    /// @notice Update the address authorized to distribute funds via a contract call.
+    /// @param newDistributor The new distributor address.
+    function setDistributor(address newDistributor) external onlyOwner {
+        emit DistributorSet(distributor = newDistributor);
     }
 
     /// @notice Update the address with permission to claim fees.

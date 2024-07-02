@@ -15,25 +15,19 @@ contract RecurringRoundV1Test is Test {
     RecurringRoundV1 round;
 
     address internal factoryOwner = makeAddr('factory_owner');
-    address internal bot = makeAddr('bot');
+    address internal distributor = makeAddr('distributor');
     address internal feeClaimer = makeAddr('fee_claimer');
-    address internal alice = makeAddr('alice');
-
-    address internal admin;
-    uint256 internal adminPk;
-    address internal signer;
-    uint256 internal signerPk;
+    address payable internal alice = payable(makeAddr('alice'));
+    address payable internal bob = payable(makeAddr('bob'));
 
     function setUp() public {
-        (admin, adminPk) = makeAddrAndKey('admin');
-        (signer, signerPk) = makeAddrAndKey('signer');
-
         address recurringRoundV1Beacon = address(new UpgradeableBeacon(address(new RecurringRoundV1()), factoryOwner));
         address factoryImpl = address(new RoundFactory(address(0), recurringRoundV1Beacon));
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
-                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (factoryOwner, signer, feeClaimer, 500))
+                    factoryImpl,
+                    abi.encodeCall(IRoundFactory.initialize, (factoryOwner, address(0), distributor, feeClaimer, 1_000))
                 )
             )
         );
@@ -41,116 +35,117 @@ contract RecurringRoundV1Test is Test {
         round = RecurringRoundV1(
             payable(
                 factory.deployRecurringRoundV1(
-                    IRoundFactory.RecurringRoundV1Config({
-                        seriesId: 42,
-                        initialOwner: admin,
-                        isFeeEnabled: true,
-                        isLeafVerificationEnabled: false,
-                        award: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0)
-                    })
+                    IRoundFactory.RecurringRoundV1Config({seriesId: 42, initialOwner: alice})
                 )
             )
         );
     }
 
-    function testFuzz_claimETHValidSig(uint120 value, uint40 seriesId, uint40 roundId, uint40 fid) public {
-        vm.assume(value > 0);
+    function testFuzz_distributeFunds(uint256 amount, uint40 batchId, uint16 feeBPS) public {
+        vm.assume(amount > 0 && amount < type(uint128).max);
+        vm.assume(feeBPS <= 1_000); // Maximum 10% fee
 
-        IRoundFactory.RecurringRoundV1Config memory config = IRoundFactory.RecurringRoundV1Config({
-            seriesId: seriesId,
-            initialOwner: admin,
-            isFeeEnabled: true,
-            isLeafVerificationEnabled: false,
-            award: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0)
+        // Setting up distribution configuration
+        IRecurringRoundV1.Winner[] memory winners = new IRecurringRoundV1.Winner[](1);
+        winners[0] = IRecurringRoundV1.Winner({fid: 1, recipient: alice, amount: amount});
+
+        IRecurringRoundV1.DistributionConfig memory config = IRecurringRoundV1.DistributionConfig({
+            asset: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0),
+            winners: winners,
+            fee: amount * feeBPS / 10_000,
+            roundId: 1,
+            isFinalBatch: false
         });
 
-        address predictedRound = factory.predictRecurringRoundV1Address(config);
-        vm.assume(predictedRound.code.length == 0);
+        // Deposit ETH into contract
+        vm.deal(address(round), amount + config.fee);
 
-        round = RecurringRoundV1(payable(factory.deployRecurringRoundV1(config)));
+        // Distribution by authorized distributor
+        vm.expectEmit();
+        emit IRecurringRoundV1.AssetDistributed(config.roundId, config.asset, config.winners);
 
-        vm.deal(address(round), value);
-        bytes memory sig = _signClaim(signerPk, roundId, fid, alice, value);
+        vm.prank(factory.distributor());
+        round.distribute(batchId, config);
+
+        // Verify distributions
+        assertEq(address(alice).balance, amount);
+        assertEq(factory.feeClaimer().balance, config.fee);
+    }
+
+    function test_distributeAlreadyProcessedBatchReverts() public {
+        uint40 batchId = 1;
+        uint256 amount = 100;
+        uint16 feeBPS = 500;
+
+        IRecurringRoundV1.Winner[] memory winners = new IRecurringRoundV1.Winner[](1);
+        winners[0] = IRecurringRoundV1.Winner({fid: 1, recipient: alice, amount: amount});
+
+        IRecurringRoundV1.DistributionConfig memory config = IRecurringRoundV1.DistributionConfig({
+            asset: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0),
+            winners: winners,
+            fee: amount * feeBPS / 10000,
+            roundId: 1,
+            isFinalBatch: false
+        });
+
+        vm.deal(address(round), amount + config.fee);
+
+        vm.prank(factory.distributor());
+        round.distribute(batchId, config);
+
+        vm.prank(factory.distributor());
+        vm.expectRevert(IRecurringRoundV1.BATCH_ALREADY_PROCESSED.selector);
+        round.distribute(batchId, config);
+    }
+
+    function test_withdrawFunds() public {
+        uint256 amount = 50;
+        AssetController.Asset memory asset = AssetController.Asset(AssetController.AssetType.ETH, address(0), 0);
+
+        vm.deal(address(round), amount);
+        assertEq(address(round).balance, amount);
 
         vm.expectEmit();
-        emit IRecurringRoundV1.Claimed(roundId, fid, alice, value);
+        emit IRecurringRoundV1.WithdrawalCompleted(asset, amount);
 
-        vm.prank(bot);
-        round.claim(roundId, fid, alice, value, new bytes32[](0), sig);
-
-        bool claimed = round.hasFIDClaimedForRound(roundId, fid);
+        vm.prank(alice);
+        round.withdraw(asset, amount);
 
         assertEq(address(round).balance, 0);
-        assertEq(claimed, true);
-        assertEq(address(alice).balance, value);
+        assertEq(address(alice).balance, amount);
     }
 
-    function test_claimInvalidSignatureReverts() public {
-        uint256 roundId = 1;
-        uint256 fid = 1;
+    function test_withdrawByNonOwnerReverts() public {
+        uint256 amount = 50;
+        AssetController.Asset memory asset = AssetController.Asset(AssetController.AssetType.ETH, address(0), 0);
+
+        vm.deal(address(round), amount);
+
+        vm.prank(bob);
+        vm.expectRevert(0x82b42900); // `Unauthorized()`.
+        round.withdraw(asset, amount);
+    }
+
+    function test_distributeFundsInvalidRecipientReverts() public {
+        uint40 batchId = 1;
         uint256 amount = 100;
-        address recipient = alice;
+        uint16 feeBPS = 500;
 
-        bytes memory invalidSig = _signClaim(signerPk, roundId, fid, address(1), amount);
+        IRecurringRoundV1.Winner[] memory winners = new IRecurringRoundV1.Winner[](1);
+        winners[0] = IRecurringRoundV1.Winner({fid: 1, recipient: payable(0), amount: amount});
 
-        vm.expectRevert(IRecurringRoundV1.INVALID_SIGNATURE.selector);
+        IRecurringRoundV1.DistributionConfig memory config = IRecurringRoundV1.DistributionConfig({
+            asset: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0),
+            winners: winners,
+            fee: amount * feeBPS / 10000,
+            roundId: 1,
+            isFinalBatch: false
+        });
 
-        vm.prank(bot);
-        round.claim(roundId, fid, recipient, amount, new bytes32[](0), invalidSig);
-    }
+        vm.deal(address(round), amount + config.fee);
 
-    function test_claimFee() public {
-        uint40 roundId = 1;
-        uint256 fid = 1;
-        uint256 value = 100e18;
-        uint256 expectedFee = value * factory.feeBPS() / 10_000;
-
-        vm.deal(address(round), value + expectedFee);
-        bytes memory sig = _signClaim(signerPk, roundId, fid, alice, value);
-
-        vm.prank(bot);
-        round.claim(roundId, fid, alice, value, new bytes32[](0), sig);
-
-        uint256 feeClaimerBalance = address(feeClaimer).balance;
-
-        vm.prank(feeClaimer);
-        round.claimFee();
-
-        assertEq(address(feeClaimer).balance, feeClaimerBalance + expectedFee);
-    }
-
-    function test_setClaimMerkleRoot() public {
-        uint256 roundId = 1;
-        bytes32 newMerkleRoot = keccak256('new_merkle_root');
-        bytes memory sig = _signSetMerkleRoot(adminPk, roundId, newMerkleRoot);
-
-        vm.expectEmit();
-        emit IRecurringRoundV1.ClaimMerkleRootSet(roundId, newMerkleRoot);
-
-        vm.prank(admin);
-        round.setClaimMerkleRoot(roundId, newMerkleRoot, sig);
-
-        assertEq(round.claimMerkleRootForRound(roundId), newMerkleRoot);
-        assertEq(round.nonce(), 1);
-    }
-
-    function _signClaim(uint256 pk, uint256 roundId, uint256 fid, address to, uint256 amount)
-        public
-        returns (bytes memory signature)
-    {
-        bytes32 digest = round.hashTypedData(keccak256(abi.encode(round.CLAIM_TYPEHASH(), roundId, fid, to, amount)));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-
-        signature = abi.encodePacked(r, s, v);
-        assertEq(signature.length, 65);
-    }
-
-    function _signSetMerkleRoot(uint256 pk, uint256 roundId, bytes32 root) public returns (bytes memory signature) {
-        bytes32 digest =
-            round.hashTypedData(keccak256(abi.encode(round.SET_MERKLE_ROOT_TYPEHASH(), roundId, root, round.nonce())));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-
-        signature = abi.encodePacked(r, s, v);
-        assertEq(signature.length, 65);
+        vm.prank(factory.distributor());
+        vm.expectRevert(IRecurringRoundV1.INVALID_RECIPIENT.selector);
+        round.distribute(batchId, config);
     }
 }

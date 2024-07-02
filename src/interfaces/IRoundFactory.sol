@@ -37,12 +37,6 @@ interface IRoundFactory {
         uint40 seriesId;
         /// @dev The initial round owner.
         address initialOwner;
-        /// @dev Whether the round fee is enabled.
-        bool isFeeEnabled;
-        /// @dev Whether claim leaf verification is enabled.
-        bool isLeafVerificationEnabled;
-        /// @dev The award asset information.
-        AssetController.Asset award;
     }
 
     /// @notice Thrown when the fee BPS is above the maximum allowable fee.
@@ -50,6 +44,9 @@ interface IRoundFactory {
 
     /// @notice Emitted when the signer address is updated.
     event SignerSet(address newSigner);
+
+    /// @notice Emitted when the distributor address is updated.
+    event DistributorSet(address newDistributor);
 
     /// @notice Emitted when the fee claimer address is updated.
     event FeeClaimerSet(address newFeeClaimer);
@@ -69,9 +66,11 @@ interface IRoundFactory {
 
     /// @param owner The owner of the factory contract and child round contracts.
     /// @param signer The server address that signs message for functions that require server authorization.
+    /// @param distributor The address authorized to distribute funds via a contract call.
     /// @param feeClaimer The address with permission to claim fees.
     /// @param feeBPS The fee percentage for all rounds with fee enabled.
-    function initialize(address owner, address signer, address feeClaimer, uint16 feeBPS) external;
+    function initialize(address owner, address signer, address distributor, address feeClaimer, uint16 feeBPS)
+        external;
 
     /// @notice The owner of the factory contract and child round contracts.
     function owner() external view returns (address);
@@ -79,6 +78,9 @@ interface IRoundFactory {
     /// @notice The server address that signs message for functions that
     /// require server authorization.
     function signer() external view returns (address);
+
+    /// @notice The address authorized to distribute funds via a contract call.
+    function distributor() external view returns (address);
 
     /// @notice The address with permission to claim fees.
     function feeClaimer() external view returns (address);

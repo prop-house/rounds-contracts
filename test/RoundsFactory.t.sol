@@ -15,6 +15,7 @@ contract RoundFactoryTest is Test {
 
     address internal owner = makeAddr('owner');
     address internal admin = makeAddr('admin');
+    address internal distributor = makeAddr('distributor');
     address internal feeClaimer = makeAddr('fee_claimer');
     address internal alice = makeAddr('alice');
 
@@ -30,7 +31,7 @@ contract RoundFactoryTest is Test {
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
-                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, feeClaimer, 500))
+                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, distributor, feeClaimer, 500))
                 )
             )
         );
@@ -53,13 +54,8 @@ contract RoundFactoryTest is Test {
     }
 
     function test_predictRecurringRoundV1Address() public {
-        IRoundFactory.RecurringRoundV1Config memory config = IRoundFactory.RecurringRoundV1Config({
-            seriesId: 42,
-            initialOwner: admin,
-            isFeeEnabled: true,
-            isLeafVerificationEnabled: false,
-            award: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0)
-        });
+        IRoundFactory.RecurringRoundV1Config memory config =
+            IRoundFactory.RecurringRoundV1Config({seriesId: 42, initialOwner: admin});
 
         address predictedRecurringRoundV1 = factory.predictRecurringRoundV1Address(config);
         address recurringRoundV1 = factory.deployRecurringRoundV1(config);
