@@ -17,6 +17,7 @@ contract DeployRoundFactory is Script {
 
         address owner = vm.envAddress('OWNER_ADDRESS');
         address signer = vm.envAddress('SIGNER_ADDRESS');
+        address distributor = vm.envAddress('DISTRIBUTOR_ADDRESS');
         address feeClaimer = vm.envAddress('FEE_CLAIMER_ADDRESS');
         uint16 feeBPS = SafeCast.toUint16(vm.envUint('FEE_BPS'));
 
@@ -27,7 +28,8 @@ contract DeployRoundFactory is Script {
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
-                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (owner, signer, feeClaimer, feeBPS))
+                    factoryImpl,
+                    abi.encodeCall(IRoundFactory.initialize, (owner, signer, distributor, feeClaimer, feeBPS))
                 )
             )
         );

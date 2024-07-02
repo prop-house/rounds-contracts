@@ -15,6 +15,7 @@ contract SingleRoundV1Test is Test {
     SingleRoundV1 round;
 
     address internal factoryOwner = makeAddr('factory_owner');
+    address internal distributor = makeAddr('distributor');
     address internal bot = makeAddr('bot');
     address internal feeClaimer = makeAddr('fee_claimer');
     address internal alice = makeAddr('alice');
@@ -33,7 +34,8 @@ contract SingleRoundV1Test is Test {
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
-                    factoryImpl, abi.encodeCall(IRoundFactory.initialize, (factoryOwner, signer, feeClaimer, 500))
+                    factoryImpl,
+                    abi.encodeCall(IRoundFactory.initialize, (factoryOwner, signer, distributor, feeClaimer, 500))
                 )
             )
         );
