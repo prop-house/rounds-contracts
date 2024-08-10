@@ -7,6 +7,7 @@ import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC19
 import {RecurringRoundV1} from 'src/rounds/RecurringRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
+import {SingleRoundV2} from 'src/rounds/SingleRoundV2.sol';
 import {AssetController} from 'src/AssetController.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 
@@ -26,8 +27,10 @@ contract RoundFactoryTest is Test {
         (signer, signerPk) = makeAddrAndKey('signer');
 
         address singleRoundV1Beacon = address(new UpgradeableBeacon(address(new SingleRoundV1()), owner));
+        address singleRoundV2Beacon = address(new UpgradeableBeacon(address(new SingleRoundV2()), owner));
         address recurringRoundV1Beacon = address(new UpgradeableBeacon(address(new RecurringRoundV1()), owner));
-        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon, recurringRoundV1Beacon));
+        address factoryImpl =
+            address(new RoundFactory(singleRoundV1Beacon, singleRoundV2Beacon, recurringRoundV1Beacon));
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
@@ -53,6 +56,16 @@ contract RoundFactoryTest is Test {
         assertEq(predictedSingleRoundV1, singleRoundV1);
     }
 
+    function test_predictSingleRoundV2Address() public {
+        IRoundFactory.SingleRoundV2Config memory config =
+            IRoundFactory.SingleRoundV2Config({roundId: 42, initialOwner: admin});
+
+        address predictedSingleRoundV2 = factory.predictSingleRoundV2Address(config);
+        address singleRoundV2 = factory.deploySingleRoundV2(config);
+
+        assertEq(predictedSingleRoundV2, singleRoundV2);
+    }
+
     function test_predictRecurringRoundV1Address() public {
         IRoundFactory.RecurringRoundV1Config memory config =
             IRoundFactory.RecurringRoundV1Config({seriesId: 42, initialOwner: admin});
@@ -61,5 +74,16 @@ contract RoundFactoryTest is Test {
         address recurringRoundV1 = factory.deployRecurringRoundV1(config);
 
         assertEq(predictedRecurringRoundV1, recurringRoundV1);
+    }
+
+    function test_noCollisionWithSameRoundConfig() public {
+        IRoundFactory.SingleRoundV2Config memory singleRoundV2Config =
+            IRoundFactory.SingleRoundV2Config({roundId: 42, initialOwner: admin});
+        IRoundFactory.RecurringRoundV1Config memory recurringRoundV1Config =
+            IRoundFactory.RecurringRoundV1Config({seriesId: 42, initialOwner: admin});
+
+        assertNotEq(
+            factory.deploySingleRoundV2(singleRoundV2Config), factory.deployRecurringRoundV1(recurringRoundV1Config)
+        );
     }
 }

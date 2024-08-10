@@ -12,7 +12,8 @@ interface IRoundFactory {
 
     /// @notice All round versions.
     enum RoundVersion {
-        V1
+        V1,
+        V2
     }
 
     /// @notice The single round V1 configuration.
@@ -29,6 +30,14 @@ interface IRoundFactory {
         uint256 awardAmount;
         /// @dev The award asset information.
         AssetController.Asset award;
+    }
+
+    /// @notice The single round V2 configuration.
+    struct SingleRoundV2Config {
+        /// @dev The single round ID.
+        uint40 roundId;
+        /// @dev The initial round owner.
+        address initialOwner;
     }
 
     /// @notice The recurring round V1 configuration.
@@ -58,6 +67,11 @@ interface IRoundFactory {
     /// @param round The deployed round address.
     /// @param config The round configuration.
     event SingleRoundV1Deployed(address round, SingleRoundV1Config config);
+
+    /// @notice Emitted when a new v2 single round is deployed.
+    /// @param round The deployed round address.
+    /// @param config The round configuration.
+    event SingleRoundV2Deployed(address round, SingleRoundV2Config config);
 
     /// @notice Emitted when a new v1 recurring round is deployed.
     /// @param round The deployed round address.

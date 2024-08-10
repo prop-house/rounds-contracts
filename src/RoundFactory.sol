@@ -8,6 +8,7 @@ import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/Upgradeable
 import {UUPSUpgradeable} from 'openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol';
 import {IRecurringRoundV1} from 'src/interfaces/IRecurringRoundV1.sol';
 import {ISingleRoundV1} from 'src/interfaces/ISingleRoundV1.sol';
+import {ISingleRoundV2} from 'src/interfaces/ISingleRoundV2.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 
 contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable {
@@ -16,6 +17,9 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
 
     /// @notice The v1 single round beacon contract address.
     address public immutable singleRoundV1Beacon;
+
+    /// @notice The v2 single round beacon contract address.
+    address public immutable singleRoundV2Beacon;
 
     /// @notice The v1 recurring round beacon contract address.
     address public immutable recurringRoundV1Beacon;
@@ -33,12 +37,14 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     uint16 public feeBPS;
 
     /// @param singleRoundV1Beacon_ The v1 single round beacon contract address.
+    /// @param singleRoundV2Beacon_ The v2 single round beacon contract address.
     /// @param recurringRoundV1Beacon_ The v1 recurring round beacon contract address.
     /// @dev Disable any future initialization.
-    constructor(address singleRoundV1Beacon_, address recurringRoundV1Beacon_) {
+    constructor(address singleRoundV1Beacon_, address singleRoundV2Beacon_, address recurringRoundV1Beacon_) {
         _disableInitializers();
 
         singleRoundV1Beacon = singleRoundV1Beacon_;
+        singleRoundV2Beacon = singleRoundV2Beacon_;
         recurringRoundV1Beacon = recurringRoundV1Beacon_;
     }
 
@@ -72,6 +78,15 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     }
 
     // forgefmt: disable-next-item
+    /// @notice Predicts a v2 single round address for a given configuration.
+    /// @param config The round configuration.
+    function predictSingleRoundV2Address(SingleRoundV2Config calldata config) external view returns (address round) {
+        round = _predictRoundAddress(
+            singleRoundV2Beacon, _getSingleRoundV2Salt(config)
+        );
+    }
+
+    // forgefmt: disable-next-item
     /// @notice Predicts a v1 recurring round address for a given configuration.
     /// @param config The round configuration.
     function predictRecurringRoundV1Address(RecurringRoundV1Config calldata config) external view returns (address round) {
@@ -88,6 +103,14 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
         emit SingleRoundV1Deployed(round, config);
     }
 
+    /// @notice Deploy a v2 single round.
+    /// @param config The round configuration.
+    function deploySingleRoundV2(SingleRoundV2Config calldata config) external returns (address round) {
+        round = address(new BeaconProxy{salt: _getSingleRoundV2Salt(config)}(singleRoundV2Beacon, new bytes(0)));
+        ISingleRoundV2(round).initialize(address(this), config);
+        emit SingleRoundV2Deployed(round, config);
+    }
+
     /// @notice Deploy a v1 recurring round.
     /// @param config The round configuration.
     function deployRecurringRoundV1(RecurringRoundV1Config calldata config) external returns (address round) {
@@ -100,6 +123,12 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param newImplementation The new implementation address.
     function setSingleRoundV1Implementation(address newImplementation) external onlyOwner {
         UpgradeableBeacon(singleRoundV1Beacon).upgradeTo(newImplementation);
+    }
+
+    /// @notice Upgrade the v2 single round implementation.
+    /// @param newImplementation The new implementation address.
+    function setSingleRoundV2Implementation(address newImplementation) external onlyOwner {
+        UpgradeableBeacon(singleRoundV2Beacon).upgradeTo(newImplementation);
     }
 
     /// @notice Upgrade the v1 recurring round implementation.
@@ -138,6 +167,12 @@ contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable 
     /// @param config The single round v1 configuration.
     function _getSingleRoundV1Salt(SingleRoundV1Config calldata config) internal pure returns (bytes32 salt) {
         salt = keccak256(abi.encode(RoundType.Single, RoundVersion.V1, config));
+    }
+
+    /// @dev Generates a single round v2 salt using the round type, version, and configuration.
+    /// @param config The single round v2 configuration.
+    function _getSingleRoundV2Salt(SingleRoundV2Config calldata config) internal pure returns (bytes32 salt) {
+        salt = keccak256(abi.encode(RoundType.Single, RoundVersion.V2, config));
     }
 
     /// @dev Generates a recurring round v1 salt using the round type, version, and configuration.
