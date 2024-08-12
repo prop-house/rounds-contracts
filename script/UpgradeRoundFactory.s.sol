@@ -12,9 +12,10 @@ contract UpgradeRoundFactory is Script {
         RoundFactory factory = RoundFactory(vm.envAddress('ROUND_FACTORY'));
 
         address singleRoundV1Beacon = vm.envAddress('SINGLE_ROUND_V1_BEACON');
+        address singleRoundV2Beacon = vm.envAddress('SINGLE_ROUND_V2_BEACON');
         address recurringRoundV1Beacon = vm.envAddress('RECURRING_ROUND_V1_BEACON');
 
-        factoryImpl = address(new RoundFactory(singleRoundV1Beacon, recurringRoundV1Beacon));
+        factoryImpl = address(new RoundFactory(singleRoundV1Beacon, singleRoundV2Beacon, recurringRoundV1Beacon));
         factory.upgradeToAndCall(factoryImpl, new bytes(0));
 
         vm.stopBroadcast();

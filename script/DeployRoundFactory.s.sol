@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import {Script} from 'forge-std/Script.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
+import {SingleRoundV2} from 'src/rounds/SingleRoundV2.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 import {RecurringRoundV1} from 'src/rounds/RecurringRoundV1.sol';
 import {SafeCast} from 'openzeppelin/contracts/utils/math/SafeCast.sol';
@@ -22,8 +23,10 @@ contract DeployRoundFactory is Script {
         uint16 feeBPS = SafeCast.toUint16(vm.envUint('FEE_BPS'));
 
         address singleRoundV1Beacon = address(new UpgradeableBeacon(address(new SingleRoundV1()), owner));
+        address singleRoundV2Beacon = address(new UpgradeableBeacon(address(new SingleRoundV2()), owner));
         address recurringRoundV1Beacon = address(new UpgradeableBeacon(address(new RecurringRoundV1()), owner));
-        address factoryImpl = address(new RoundFactory(singleRoundV1Beacon, recurringRoundV1Beacon));
+        address factoryImpl =
+            address(new RoundFactory(singleRoundV1Beacon, singleRoundV2Beacon, recurringRoundV1Beacon));
 
         factory = RoundFactory(
             address(

@@ -4,15 +4,15 @@ pragma solidity 0.8.23;
 import {Test} from 'forge-std/Test.sol';
 import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import {IRecurringRoundV1} from 'src/interfaces/IRecurringRoundV1.sol';
-import {RecurringRoundV1} from 'src/rounds/RecurringRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
+import {ISingleRoundV2} from 'src/interfaces/ISingleRoundV2.sol';
+import {SingleRoundV2} from 'src/rounds/SingleRoundV2.sol';
 import {AssetController} from 'src/AssetController.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 
-contract RecurringRoundV1Test is Test {
+contract SingleRoundV2Test is Test {
     RoundFactory factory;
-    RecurringRoundV1 round;
+    SingleRoundV2 round;
 
     address internal factoryOwner = makeAddr('factory_owner');
     address internal distributor = makeAddr('distributor');
@@ -21,8 +21,8 @@ contract RecurringRoundV1Test is Test {
     address payable internal bob = payable(makeAddr('bob'));
 
     function setUp() public {
-        address recurringRoundV1Beacon = address(new UpgradeableBeacon(address(new RecurringRoundV1()), factoryOwner));
-        address factoryImpl = address(new RoundFactory(address(0), address(0), recurringRoundV1Beacon));
+        address singleRoundV2Beacon = address(new UpgradeableBeacon(address(new SingleRoundV2()), factoryOwner));
+        address factoryImpl = address(new RoundFactory(address(0), singleRoundV2Beacon, address(0)));
         factory = RoundFactory(
             address(
                 new ERC1967Proxy(
@@ -32,12 +32,8 @@ contract RecurringRoundV1Test is Test {
             )
         );
 
-        round = RecurringRoundV1(
-            payable(
-                factory.deployRecurringRoundV1(
-                    IRoundFactory.RecurringRoundV1Config({seriesId: 42, initialOwner: alice})
-                )
-            )
+        round = SingleRoundV2(
+            payable(factory.deploySingleRoundV2(IRoundFactory.SingleRoundV2Config({roundId: 42, initialOwner: alice})))
         );
     }
 
@@ -46,14 +42,13 @@ contract RecurringRoundV1Test is Test {
         vm.assume(feeBPS <= 1_000); // Maximum 10% fee
 
         // Setting up distribution configuration
-        IRecurringRoundV1.Winner[] memory winners = new IRecurringRoundV1.Winner[](1);
-        winners[0] = IRecurringRoundV1.Winner({fid: 1, recipient: alice, amount: amount});
+        ISingleRoundV2.Winner[] memory winners = new ISingleRoundV2.Winner[](1);
+        winners[0] = ISingleRoundV2.Winner({fid: 1, recipient: alice, amount: amount});
 
-        IRecurringRoundV1.DistributionConfig memory config = IRecurringRoundV1.DistributionConfig({
+        ISingleRoundV2.DistributionConfig memory config = ISingleRoundV2.DistributionConfig({
             asset: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0),
             winners: winners,
             fee: amount * feeBPS / 10_000,
-            roundId: 1,
             isFinalBatch: false
         });
 
@@ -62,7 +57,7 @@ contract RecurringRoundV1Test is Test {
 
         // Distribution by authorized distributor
         vm.expectEmit();
-        emit IRecurringRoundV1.AssetDistributed(config.roundId, config.asset, config.winners);
+        emit ISingleRoundV2.AssetDistributed(config.asset, config.winners);
 
         vm.prank(factory.distributor());
         round.distribute(batchId, config);
@@ -77,14 +72,13 @@ contract RecurringRoundV1Test is Test {
         uint256 amount = 100;
         uint16 feeBPS = 500;
 
-        IRecurringRoundV1.Winner[] memory winners = new IRecurringRoundV1.Winner[](1);
-        winners[0] = IRecurringRoundV1.Winner({fid: 1, recipient: alice, amount: amount});
+        ISingleRoundV2.Winner[] memory winners = new ISingleRoundV2.Winner[](1);
+        winners[0] = ISingleRoundV2.Winner({fid: 1, recipient: alice, amount: amount});
 
-        IRecurringRoundV1.DistributionConfig memory config = IRecurringRoundV1.DistributionConfig({
+        ISingleRoundV2.DistributionConfig memory config = ISingleRoundV2.DistributionConfig({
             asset: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0),
             winners: winners,
             fee: amount * feeBPS / 10000,
-            roundId: 1,
             isFinalBatch: false
         });
 
@@ -94,7 +88,7 @@ contract RecurringRoundV1Test is Test {
         round.distribute(batchId, config);
 
         vm.prank(factory.distributor());
-        vm.expectRevert(IRecurringRoundV1.BATCH_ALREADY_PROCESSED.selector);
+        vm.expectRevert(ISingleRoundV2.BATCH_ALREADY_PROCESSED.selector);
         round.distribute(batchId, config);
     }
 
@@ -106,7 +100,7 @@ contract RecurringRoundV1Test is Test {
         assertEq(address(round).balance, amount);
 
         vm.expectEmit();
-        emit IRecurringRoundV1.WithdrawalCompleted(asset, amount);
+        emit ISingleRoundV2.WithdrawalCompleted(asset, amount);
 
         vm.prank(alice);
         round.withdraw(asset, amount);
@@ -131,21 +125,20 @@ contract RecurringRoundV1Test is Test {
         uint256 amount = 100;
         uint16 feeBPS = 500;
 
-        IRecurringRoundV1.Winner[] memory winners = new IRecurringRoundV1.Winner[](1);
-        winners[0] = IRecurringRoundV1.Winner({fid: 1, recipient: payable(0), amount: amount});
+        ISingleRoundV2.Winner[] memory winners = new ISingleRoundV2.Winner[](1);
+        winners[0] = ISingleRoundV2.Winner({fid: 1, recipient: payable(0), amount: amount});
 
-        IRecurringRoundV1.DistributionConfig memory config = IRecurringRoundV1.DistributionConfig({
+        ISingleRoundV2.DistributionConfig memory config = ISingleRoundV2.DistributionConfig({
             asset: AssetController.Asset(AssetController.AssetType.ETH, address(0), 0),
             winners: winners,
             fee: amount * feeBPS / 10000,
-            roundId: 1,
             isFinalBatch: false
         });
 
         vm.deal(address(round), amount + config.fee);
 
         vm.prank(factory.distributor());
-        vm.expectRevert(IRecurringRoundV1.INVALID_RECIPIENT.selector);
+        vm.expectRevert(ISingleRoundV2.INVALID_RECIPIENT.selector);
         round.distribute(batchId, config);
     }
 }
