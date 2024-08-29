@@ -38,6 +38,13 @@ contract RoundFactoryTest is Test {
                 )
             )
         );
+
+        // Transfer ownership of the beacons to the factory.
+        vm.startPrank(owner);
+        UpgradeableBeacon(singleRoundV1Beacon).transferOwnership(address(factory));
+        UpgradeableBeacon(singleRoundV2Beacon).transferOwnership(address(factory));
+        UpgradeableBeacon(recurringRoundV1Beacon).transferOwnership(address(factory));
+        vm.stopPrank();
     }
 
     function test_predictSingleRoundV1Address() public {
