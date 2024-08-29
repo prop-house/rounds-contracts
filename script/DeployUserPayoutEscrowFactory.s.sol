@@ -15,11 +15,18 @@ contract DeployUserPayoutEscrowFactory is Script {
         address owner = vm.envAddress('OWNER_ADDRESS');
         address payer = vm.envAddress('PAYER_ADDRESS');
 
-        address userPayoutEscrowBeacon = address(new UpgradeableBeacon(address(new UserPayoutEscrow()), owner));
-        address factoryImpl = address(new UserPayoutEscrowFactory(userPayoutEscrowBeacon));
+        bytes32 salt = bytes32(uint256(42));
+
+        // forgefmt: disable-next-item
+        address userPayoutEscrowBeacon = address(new UpgradeableBeacon{salt: salt}(address(new UserPayoutEscrow{salt: salt}()), owner));
+        address factoryImpl = address(new UserPayoutEscrowFactory{salt: salt}(userPayoutEscrowBeacon));
 
         factory = UserPayoutEscrowFactory(
-            address(new ERC1967Proxy(factoryImpl, abi.encodeCall(UserPayoutEscrowFactory.initialize, (owner, payer))))
+            address(
+                new ERC1967Proxy{salt: salt}(
+                    factoryImpl, abi.encodeCall(UserPayoutEscrowFactory.initialize, (owner, payer))
+                )
+            )
         );
         vm.stopBroadcast();
     }
