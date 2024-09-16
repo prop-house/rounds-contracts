@@ -8,7 +8,7 @@ import {RecurringRoundV1} from 'src/rounds/RecurringRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
 import {SingleRoundV2} from 'src/rounds/SingleRoundV2.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 
 contract RoundFactoryTest is Test {

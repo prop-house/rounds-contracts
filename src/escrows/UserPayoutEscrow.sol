@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import {Initializable} from 'solady/utils/Initializable.sol';
 import {IUserPayoutEscrow} from 'src/interfaces/IUserPayoutEscrow.sol';
 import {IUserPayoutEscrowFactory} from 'src/interfaces/IUserPayoutEscrowFactory.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 
 contract UserPayoutEscrow is IUserPayoutEscrow, Initializable, AssetController {
     /// @notice The factory that deployed this escrow.

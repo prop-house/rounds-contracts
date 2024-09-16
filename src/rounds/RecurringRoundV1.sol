@@ -6,7 +6,7 @@ import {Initializable} from 'solady/utils/Initializable.sol';
 import {IRecurringRoundV1} from 'src/interfaces/IRecurringRoundV1.sol';
 import {FixedPointMathLib} from 'solady/utils/FixedPointMathLib.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 
 contract RecurringRoundV1 is IRecurringRoundV1, Initializable, AssetController, Ownable {
     /// @notice 100% in basis points.

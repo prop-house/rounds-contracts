@@ -6,7 +6,7 @@ import {Initializable} from 'solady/utils/Initializable.sol';
 import {ISingleRoundV2} from 'src/interfaces/ISingleRoundV2.sol';
 import {FixedPointMathLib} from 'solady/utils/FixedPointMathLib.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 
 contract SingleRoundV2 is ISingleRoundV2, Initializable, AssetController, Ownable {
     /// @notice 100% in basis points.

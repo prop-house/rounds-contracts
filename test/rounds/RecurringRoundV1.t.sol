@@ -7,7 +7,7 @@ import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC19
 import {IRecurringRoundV1} from 'src/interfaces/IRecurringRoundV1.sol';
 import {RecurringRoundV1} from 'src/rounds/RecurringRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 
 contract RecurringRoundV1Test is Test {

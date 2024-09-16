@@ -7,7 +7,7 @@ import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC19
 import {ISingleRoundV1} from 'src/interfaces/ISingleRoundV1.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 import {SingleRoundV1} from 'src/rounds/SingleRoundV1.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 import {RoundFactory} from 'src/RoundFactory.sol';
 
 contract SingleRoundV1Test is Test {

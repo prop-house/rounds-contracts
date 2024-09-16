@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 
 interface ISingleRoundV2 {
     /// @notice Information about a round winner.

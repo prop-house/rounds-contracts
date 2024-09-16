@@ -2,8 +2,8 @@
 pragma solidity 0.8.23;
 
 import {Script} from 'forge-std/Script.sol';
-import {UserPayoutEscrow} from 'src/misc/UserPayoutEscrow.sol';
-import {UserPayoutEscrowFactory} from 'src/misc/UserPayoutEscrowFactory.sol';
+import {UserPayoutEscrow} from 'src/escrows/UserPayoutEscrow.sol';
+import {UserPayoutEscrowFactory} from 'src/escrows/UserPayoutEscrowFactory.sol';
 import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 

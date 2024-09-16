@@ -7,7 +7,7 @@ import {SignatureCheckerLib} from 'solady/utils/SignatureCheckerLib.sol';
 import {ISingleRoundV1} from 'src/interfaces/ISingleRoundV1.sol';
 import {MerkleProofLib} from 'solady/utils/MerkleProofLib.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
-import {AssetController} from 'src/AssetController.sol';
+import {AssetController} from 'src/abstracts/AssetController.sol';
 
 contract SingleRoundV1 is ISingleRoundV1, Initializable, AssetController, EIP712 {
     /// @notice 100% in basis points.
