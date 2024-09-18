@@ -53,8 +53,8 @@ contract ERC20TokenFactory is IERC20TokenFactory, Initializable, UUPSUpgradeable
 
     /// @dev Generates a ERC20 token salt using the token configuration.
     /// @param config The ERC20 token configuration.
-    function _getERC20TokenSalt(ERC20TokenConfig calldata config) internal pure returns (bytes32 salt) {
-        salt = keccak256(abi.encode(config));
+    function _getERC20TokenSalt(ERC20TokenConfig calldata config) internal view returns (bytes32 salt) {
+        salt = keccak256(abi.encode(block.chainid, config));
     }
 
     // forgefmt: disable-next-item
