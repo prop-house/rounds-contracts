@@ -21,7 +21,7 @@ contract ERC20TokenFactory is IERC20TokenFactory, Initializable, UUPSUpgradeable
         erc20TokenBeacon = erc20TokenBeacon_;
     }
 
-    /// @param owner_ The owner of the factory contract and child escrow contracts.
+    /// @param owner_ The owner of the factory contract and child token contracts.
     function initialize(address owner_) external initializer {
         _initializeOwner(owner_);
     }
@@ -33,8 +33,8 @@ contract ERC20TokenFactory is IERC20TokenFactory, Initializable, UUPSUpgradeable
 
     /// @notice Predicts a ERC20 token address for a given token configuration.
     /// @param config The ERC20 token configuration.
-    function predictERC20TokenAddress(ERC20TokenConfig calldata config) external view returns (address escrow) {
-        escrow = _predictERC20TokenAddress(erc20TokenBeacon, _getERC20TokenSalt(config));
+    function predictERC20TokenAddress(ERC20TokenConfig calldata config) external view returns (address token) {
+        token = _predictERC20TokenAddress(erc20TokenBeacon, _getERC20TokenSalt(config));
     }
 
     /// @notice Deploy an ERC20 token contract.
@@ -61,8 +61,8 @@ contract ERC20TokenFactory is IERC20TokenFactory, Initializable, UUPSUpgradeable
     /// @notice Predicts an ERC20 token address for a given beacon address and salt.
     /// @param beacon The beacon address.
     /// @param salt The create2 salt.
-    function _predictERC20TokenAddress(address beacon, bytes32 salt) internal view returns (address escrow) {
-        escrow = address(uint160(uint256(keccak256(
+    function _predictERC20TokenAddress(address beacon, bytes32 salt) internal view returns (address token) {
+        token = address(uint160(uint256(keccak256(
             abi.encodePacked(
                 bytes1(0xff),
                 address(this),
