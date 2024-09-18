@@ -7,7 +7,7 @@ import {ERC20TokenFactory} from 'src/tokens/ERC20TokenFactory.sol';
 import {UpgradeableBeacon} from 'openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import {ERC1967Proxy} from 'openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
-contract DeployUserPayoutEscrowFactory is Script {
+contract DeployERC20TokenFactory is Script {
     function run() public returns (ERC20TokenFactory factory) {
         uint256 deployerKey = vm.envUint('DEPLOYER_PRIVATE_KEY');
         vm.startBroadcast(deployerKey);
