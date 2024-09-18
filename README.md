@@ -40,10 +40,10 @@ $ anvil
 
 ### Script
 
-#### Deploy (Goerli)
+#### Deploy
 
 ```shell
-forge script script/DeployRoundFactory.s.sol:DeployRoundFactory --chain <chain_id> --rpc-url <rpc_url> --priority-gas-price 100000000 --broadcast --verify
+forge script script/DeployRoundFactory.s.sol:DeployRoundFactory --chain <chain_id> --rpc-url <rpc_url> --priority-gas-price 50 --broadcast --verify
 ```
 
 ### Cast
