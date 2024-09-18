@@ -23,6 +23,10 @@ contract DeployUserPayoutEscrowFactory is Script {
         factory = ERC20TokenFactory(
             address(new ERC1967Proxy{salt: salt}(factoryImpl, abi.encodeCall(ERC20TokenFactory.initialize, (owner))))
         );
+
+        // Transfer ownership of the beacon to the factory.
+        UpgradeableBeacon(erc20TokenBeacon).transferOwnership(address(factory));
+
         vm.stopBroadcast();
     }
 }
