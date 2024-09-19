@@ -38,8 +38,9 @@ contract ERC20TokenFactoryTest is Test {
             initialSupplyRecipient: recipient
         });
 
-        address predictedToken = factory.predictERC20TokenAddress(config);
-        address deployedToken = factory.deployERC20Token(config);
+        uint256 nonce = 42;
+        address predictedToken = factory.predictERC20TokenAddress(address(this), nonce);
+        address deployedToken = factory.deployERC20Token(nonce, config);
 
         assertEq(predictedToken, deployedToken);
     }

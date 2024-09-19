@@ -31,16 +31,18 @@ contract ERC20TokenFactory is IERC20TokenFactory, Initializable, UUPSUpgradeable
         return super.owner();
     }
 
-    /// @notice Predicts a ERC20 token address for a given token configuration.
-    /// @param config The ERC20 token configuration.
-    function predictERC20TokenAddress(ERC20TokenConfig calldata config) external view returns (address token) {
-        token = _predictERC20TokenAddress(erc20TokenBeacon, _getERC20TokenSalt(config));
+    /// @notice Predicts a ERC20 token address for a given deployer and nonce.
+    /// @param deployer The deployer address.
+    /// @param nonce A unique nonce.
+    function predictERC20TokenAddress(address deployer, uint256 nonce) external view returns (address token) {
+        token = _predictERC20TokenAddress(erc20TokenBeacon, _getERC20TokenSalt(deployer, nonce));
     }
 
     /// @notice Deploy an ERC20 token contract.
+    /// @param nonce A unique nonce.
     /// @param config The ERC20 token configuration.
-    function deployERC20Token(ERC20TokenConfig calldata config) external returns (address token) {
-        token = address(new BeaconProxy{salt: _getERC20TokenSalt(config)}(erc20TokenBeacon, new bytes(0)));
+    function deployERC20Token(uint256 nonce, ERC20TokenConfig calldata config) external returns (address token) {
+        token = address(new BeaconProxy{salt: _getERC20TokenSalt(msg.sender, nonce)}(erc20TokenBeacon, new bytes(0)));
         IERC20Token(token).initialize(address(this), config);
         emit ERC20TokenDeployed(token, config);
     }
@@ -51,10 +53,11 @@ contract ERC20TokenFactory is IERC20TokenFactory, Initializable, UUPSUpgradeable
         UpgradeableBeacon(erc20TokenBeacon).upgradeTo(newImplementation);
     }
 
-    /// @dev Generates a ERC20 token salt using the token configuration.
-    /// @param config The ERC20 token configuration.
-    function _getERC20TokenSalt(ERC20TokenConfig calldata config) internal view returns (bytes32 salt) {
-        salt = keccak256(abi.encode(block.chainid, config));
+    /// @dev Generates a ERC20 token salt for a given deployer and nonce.
+    /// @param deployer The deployer address.
+    /// @param nonce A unique nonce.
+    function _getERC20TokenSalt(address deployer, uint256 nonce) internal view returns (bytes32 salt) {
+        salt = keccak256(abi.encode(block.chainid, deployer, nonce));
     }
 
     // forgefmt: disable-next-item

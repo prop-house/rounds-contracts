@@ -14,7 +14,7 @@ contract DeployERC20TokenFactory is Script {
 
         address owner = vm.envAddress('OWNER_ADDRESS');
 
-        bytes32 salt = bytes32(uint256(42));
+        bytes32 salt = bytes32(uint256(420));
 
         // forgefmt: disable-next-item
         address erc20TokenBeacon = address(new UpgradeableBeacon{salt: salt}(address(new ERC20Token{salt: salt}()), owner));

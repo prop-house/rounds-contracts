@@ -35,7 +35,7 @@ contract ERC20TokenTest is Test {
             initialSupply: 1_000_000 * 10 ** 18,
             initialSupplyRecipient: initialRecipient
         });
-        token = ERC20Token(factory.deployERC20Token(config));
+        token = ERC20Token(factory.deployERC20Token(42, config));
     }
 
     function test_initializeAgainReverts() public {
