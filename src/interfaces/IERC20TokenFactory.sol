@@ -2,16 +2,21 @@
 pragma solidity 0.8.23;
 
 interface IERC20TokenFactory {
+    struct TokenAllocation {
+        /// @dev The recipient of the token allocation.
+        address recipient;
+        /// @dev The amount allocated to the recipient.
+        uint256 amount;
+    }
+
     /// @notice Information required to deploy a new ERC20 token.
     struct ERC20TokenConfig {
         /// @dev The token name.
         string name;
         /// @dev The token symbol.
         string symbol;
-        /// @dev The initial token supply.
-        uint256 initialSupply;
-        /// @dev The recipient of the initial token supply.
-        address initialSupplyRecipient;
+        /// @dev The initial token allocations.
+        TokenAllocation[] allocations;
     }
 
     /// @notice Emitted when a new ERC20 token is deployed.

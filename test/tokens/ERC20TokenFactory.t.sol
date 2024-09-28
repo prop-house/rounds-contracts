@@ -14,6 +14,8 @@ contract ERC20TokenFactoryTest is Test {
     address internal owner = makeAddr('owner');
     address internal recipient = makeAddr('recipient');
 
+    IERC20TokenFactory.TokenAllocation[] allocations;
+
     function setUp() public {
         address erc20TokenBeacon = address(new UpgradeableBeacon(address(new ERC20Token()), owner));
         address factoryImpl = address(new ERC20TokenFactory(erc20TokenBeacon));
@@ -24,6 +26,8 @@ contract ERC20TokenFactoryTest is Test {
         // Transfer ownership of the beacon to the factory
         vm.prank(owner);
         UpgradeableBeacon(erc20TokenBeacon).transferOwnership(address(factory));
+
+        allocations.push(IERC20TokenFactory.TokenAllocation({recipient: recipient, amount: 1_000_000 * 10 ** 18}));
     }
 
     function test_initialize() public {
@@ -31,12 +35,8 @@ contract ERC20TokenFactoryTest is Test {
     }
 
     function test_predictERC20TokenAddress() public {
-        ERC20TokenFactory.ERC20TokenConfig memory config = IERC20TokenFactory.ERC20TokenConfig({
-            name: 'TestToken',
-            symbol: 'TTK',
-            initialSupply: 1_000_000 * 10 ** 18,
-            initialSupplyRecipient: recipient
-        });
+        ERC20TokenFactory.ERC20TokenConfig memory config =
+            IERC20TokenFactory.ERC20TokenConfig({name: 'TestToken', symbol: 'TTK', allocations: allocations});
 
         uint256 nonce = 42;
         address predictedToken = factory.predictERC20TokenAddress(address(this), nonce);

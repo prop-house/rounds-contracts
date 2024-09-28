@@ -38,7 +38,10 @@ contract ERC20Token is IERC20Token, ERC20, Initializable {
         _name = config.name;
         _symbol = config.symbol;
 
-        if (config.initialSupply > 0) _mint(config.initialSupplyRecipient, config.initialSupply);
+        // Distribute the initial token supply, if any.
+        for (uint256 i = 0; i < config.allocations.length; i++) {
+            _mint(config.allocations[i].recipient, config.allocations[i].amount);
+        }
     }
 
     /// @notice The token name.

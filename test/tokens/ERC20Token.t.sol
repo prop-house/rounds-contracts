@@ -18,6 +18,8 @@ contract ERC20TokenTest is Test {
     address internal initialRecipient = makeAddr('initial_recipient');
     address internal otherRecipient = makeAddr('other_recipient');
 
+    IERC20TokenFactory.TokenAllocation[] allocations;
+
     function setUp() public {
         address erc20TokenBeacon = address(new UpgradeableBeacon(address(new ERC20Token()), factoryOwner));
         address factoryImpl = address(new ERC20TokenFactory(erc20TokenBeacon));
@@ -29,22 +31,18 @@ contract ERC20TokenTest is Test {
         vm.prank(factoryOwner);
         UpgradeableBeacon(erc20TokenBeacon).transferOwnership(address(factory));
 
-        IERC20TokenFactory.ERC20TokenConfig memory config = IERC20TokenFactory.ERC20TokenConfig({
-            name: 'TestToken',
-            symbol: 'TTK',
-            initialSupply: 1_000_000 * 10 ** 18,
-            initialSupplyRecipient: initialRecipient
-        });
+        allocations.push(
+            IERC20TokenFactory.TokenAllocation({recipient: initialRecipient, amount: 1_000_000 * 10 ** 18})
+        );
+
+        IERC20TokenFactory.ERC20TokenConfig memory config =
+            IERC20TokenFactory.ERC20TokenConfig({name: 'TestToken', symbol: 'TTK', allocations: allocations});
         token = ERC20Token(factory.deployERC20Token(42, config));
     }
 
     function test_initializeAgainReverts() public {
-        IERC20TokenFactory.ERC20TokenConfig memory config = IERC20TokenFactory.ERC20TokenConfig({
-            name: 'TestToken',
-            symbol: 'TTK',
-            initialSupply: 1_000_000 * 10 ** 18,
-            initialSupplyRecipient: initialRecipient
-        });
+        IERC20TokenFactory.ERC20TokenConfig memory config =
+            IERC20TokenFactory.ERC20TokenConfig({name: 'TestToken', symbol: 'TTK', allocations: allocations});
 
         // Attempt to call initialize again
         vm.expectRevert(Initializable.InvalidInitialization.selector);
