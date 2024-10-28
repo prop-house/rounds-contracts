@@ -12,8 +12,8 @@ import {ISingleRoundV2} from 'src/interfaces/ISingleRoundV2.sol';
 import {IRoundFactory} from 'src/interfaces/IRoundFactory.sol';
 
 contract RoundFactory is IRoundFactory, Initializable, UUPSUpgradeable, Ownable {
-    /// @notice The maximum allowable fee percentage (10%).
-    uint16 public constant MAX_FEE_BPS = 1_000;
+    /// @notice The maximum allowable fee percentage (20%).
+    uint16 public constant MAX_FEE_BPS = 2_000;
 
     /// @notice The v1 single round beacon contract address.
     address public immutable singleRoundV1Beacon;
